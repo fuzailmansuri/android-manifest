@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+    <!-- Remotes -->
+    <remote name="fuzailmansuri" fetch="https://github.com/fuzailmansuri/" />
+    <remote name="nulldebris" fetch="https://github.com/NullDebris/" />
+    <remote name="nulldebris-gl" fetch="https://gitlab.com/NullDebris/" />
+
+    <!-- Device & Vendor Trees -->
+    <project path="device/nothing/asteroids" name="android_device_nothing_asteroids" remote="fuzailmansuri" revision="pixelos" />
+    <project path="vendor/nothing/asteroids" name="proprietary_vendor_nothing_asteroids" remote="fuzailmansuri" revision="pixelos" />
+
+    <!-- Kernel Sources (NullDebris) -->
+    <project path="kernel/nothing/sm7635" name="android_kernel_nothing_sm7635" remote="nulldebris" revision="6.6/lineage-23.2" />
+    <project path="kernel/nothing/sm7635-modules" name="android_kernel_nothing_sm7635-modules" remote="nulldebris" revision="6.6/lineage-23.2" />
+    <project path="kernel/nothing/sm7635-devicetrees" name="android_kernel_nothing_sm7635-devicetrees" remote="nulldebris" revision="6.6/lineage-23.2" />
+
+    <!-- Apps & Hardware (NullDebris) -->
+    <project path="packages/apps/ParanoidGlyph" name="packages_apps_ParanoidGlyph" remote="nulldebris" revision="lineage-23.1" />
+    <project path="packages/apps/GlyphAdapter" name="packages_apps_GlyphAdapter" remote="nulldebris" revision="15" />
+    <project path="hardware/dolby" name="hardware_dolby" remote="nulldebris" revision="lunaris" />
+</manifest>
