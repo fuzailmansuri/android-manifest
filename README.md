@@ -1,6 +1,6 @@
 # Android Manifests for Nothing Phone (3a) (asteroids)
 
-Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing Phone (3a) / Phone (2a) (`asteroids`, SM7635 SoC).
+Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing Phone (3a) / Phone (3a) (`asteroids`, SM7635 SoC).
 
 ## Included Manifests
 - **`asteroids.xml`**: Device, proprietary vendor, kernel, hardware, and Glyph packages for Nothing Phone (3a) (`asteroids`).
