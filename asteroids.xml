@@ -8,7 +8,7 @@
     <!-- Device & Vendor Trees (Fuzail Mansuri) -->
     <project path="device/nothing/asteroids" name="android_device_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
     <project path="vendor/nothing/asteroids" name="proprietary_vendor_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
-    <project path="hardware/nothing" name="android_hardware_nothing" remote="fuzailmansuri" revision="lineage-24.0" />
+    <project path="hardware/nothing" name="android_hardware_nothing" remote="fuzailmansuri" revision="lineage-23.2" />
 
     <!-- Kernel Sources (NullDebris) -->
     <project path="kernel/nothing/sm7635" name="android_kernel_nothing_sm7635" remote="nulldebris" revision="6.6/lineage-23.2" />
