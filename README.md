@@ -26,3 +26,23 @@ source build/envsetup.sh
 lunch yaap_asteroids-user
 m yaap
 ```
+
+## Patches
+
+Custom patches for the YAAP A17 (cp2a) tree live in [`patches/`](patches/). Each
+topic is one directory with a git patch (verified clean against the synced tree)
+and per-topic notes. `patches/README.md` has the full apply instructions.
+
+| # | Topic | Repo |
+|---|-------|------|
+| 04 | Classic (A14-style) status bar icons | `frameworks/base` |
+| 05 | Icon sizing: 17.6sp set + spacing | `frameworks/base` |
+| 06 | Frosted volume / lockscreen / notifications | `build/release` |
+
+### Quick apply
+```bash
+cd <repo-from-table>
+git apply ../../patches/<NN-topic>/<patch-file>   # see patches/README.md for exact paths
+```
+Apply 04 before 05 (sizing assumes the classic icon layout). Patch 06 is
+additive flag pins copied into `build/release/aconfig/cp2a/com.android.systemui/`.

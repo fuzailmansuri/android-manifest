@@ -1,0 +1,338 @@
+diff --git a/packages/SettingsLib/src/com/android/settingslib/graph/SignalDrawable.java b/packages/SettingsLib/src/com/android/settingslib/graph/SignalDrawable.java
+index 14fa9ec02575..defb709ac9e4 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/graph/SignalDrawable.java
++++ b/packages/SettingsLib/src/com/android/settingslib/graph/SignalDrawable.java
+@@ -14,7 +14,7 @@
+ 
+ package com.android.settingslib.graph;
+ 
+-import static com.android.settingslib.flags.Flags.newStatusBarIcons;
++// import static com.android.settingslib.flags.Flags.newStatusBarIcons; // classic icons forced, see isNewStatusBarIconsEnabled()
+ 
+ import android.animation.ArgbEvaluator;
+ import android.annotation.IntRange;
+@@ -128,7 +128,7 @@ public class SignalDrawable extends DrawableWrapper {
+ 
+     @Override
+     public int getIntrinsicWidth() {
+-        if (newStatusBarIcons()) {
++        if (isNewStatusBarIconsEnabled()) {
+             return super.getIntrinsicWidth();
+         } else {
+             return mIntrinsicSize;
+@@ -137,7 +137,7 @@ public class SignalDrawable extends DrawableWrapper {
+ 
+     @Override
+     public int getIntrinsicHeight() {
+-        if (newStatusBarIcons()) {
++        if (isNewStatusBarIconsEnabled()) {
+             return super.getIntrinsicHeight();
+         } else {
+             return mIntrinsicSize;
+@@ -179,7 +179,7 @@ public class SignalDrawable extends DrawableWrapper {
+         int levelOffset = numBins == (CellSignalStrength.getNumSignalStrengthLevels() + 1) ? 10 : 0;
+         int level = (packedState & LEVEL_MASK);
+ 
+-        if (newStatusBarIcons()) {
++        if (isNewStatusBarIconsEnabled()) {
+             if (isInState(STATE_CUT)) {
+                 cutOutOffset = 20;
+             }
+@@ -250,7 +250,7 @@ public class SignalDrawable extends DrawableWrapper {
+             drawDotAndPadding(x - dotSpacing * 2, y, dotPadding, dotSize, 0);
+             canvas.drawPath(mCutoutPath, mTransparentPaint);
+             canvas.drawPath(mForegroundPath, mForegroundPaint);
+-        } else if (!newStatusBarIcons() && isInState(STATE_CUT)) {
++        } else if (!isNewStatusBarIconsEnabled() && isInState(STATE_CUT)) {
+             float cutX = (mCutoutWidthFraction * width / VIEWPORT);
+             float cutY = (mCutoutHeightFraction * height / VIEWPORT);
+             mCutoutPath.moveTo(width, height);
+@@ -348,8 +348,16 @@ public class SignalDrawable extends DrawableWrapper {
+         return (STATE_CARRIER_CHANGE << STATE_SHIFT) | (numLevels << NUM_LEVEL_SHIFT);
+     }
+ 
++    /**
++     * Classic status bar icons are forced for this ROM (Android 14-era look, see
++     * NewStatusBarIcons). Kept as a function so call sites read like upstream.
++     */
++    private static boolean isNewStatusBarIconsEnabled() {
++        return false;
++    }
++
+     private static int getIconRes() {
+-        if (newStatusBarIcons()) {
++        if (isNewStatusBarIconsEnabled()) {
+             return R.drawable.ic_mobile_level_list;
+         } else {
+             return com.android.internal.R.drawable.ic_signal_cellular;
+diff --git a/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java b/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
+index 7ddca6c0fc43..cff8609234ce 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
++++ b/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
+@@ -18,7 +18,6 @@ package com.android.settingslib.mobile;
+ 
+ import com.android.settingslib.R;
+ import com.android.settingslib.SignalIcon.MobileIconGroup;
+-import com.android.settingslib.flags.Flags;
+ 
+ import java.util.HashMap;
+ import java.util.Map;
+@@ -65,9 +64,7 @@ public class TelephonyIcons {
+ 
+     /** Make it slightly more obvious which resource we are using */
+     private static int flagged(int oldIcon, int newIcon) {
+-        if (Flags.newStatusBarIcons()) {
+-            return newIcon;
+-        }
++        // Classic (Android 14-era) RAT icons are forced for this ROM; see NewStatusBarIcons.
+         return oldIcon;
+     }
+ 
+diff --git a/packages/SettingsLib/src/com/android/settingslib/wifi/WifiUtils.kt b/packages/SettingsLib/src/com/android/settingslib/wifi/WifiUtils.kt
+index b4167e11d455..bd982c518bc9 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/wifi/WifiUtils.kt
++++ b/packages/SettingsLib/src/com/android/settingslib/wifi/WifiUtils.kt
+@@ -33,7 +33,6 @@ import androidx.annotation.VisibleForTesting
+ import androidx.lifecycle.LifecycleOwner
+ import androidx.lifecycle.lifecycleScope
+ import com.android.settingslib.R
+-import com.android.settingslib.flags.Flags.newStatusBarIcons
+ import kotlinx.coroutines.CoroutineScope
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.Job
+@@ -117,7 +116,8 @@ open class WifiUtils {
+         val WIFI_PIE = getIconsBasedOnFlag()
+ 
+         private fun getIconsBasedOnFlag(): IntArray {
+-            return if (newStatusBarIcons()) {
++            // Classic wifi icons forced for this ROM; see NewStatusBarIcons.
++            return if (false) {
+                 // TODO(b/396664075):
+                 // The new wifi icons only define a range of [0, 3]. Since this array is indexed on
+                 // level, we can simulate the range squash by mapping both level 3 to drawn-level 2,
+@@ -143,7 +143,8 @@ open class WifiUtils {
+         val NO_INTERNET_WIFI_PIE = getErrorIconsBasedOnFlag()
+ 
+         private fun getErrorIconsBasedOnFlag(): IntArray {
+-            return if (newStatusBarIcons()) {
++            // Classic wifi icons forced for this ROM; see NewStatusBarIcons.
++            return if (false) {
+                 // See above note, new wifi icons only have 3 bars, so levels 2 and 3 are the same
+                 intArrayOf(
+                     R.drawable.ic_wifi_0_error,
+diff --git a/packages/SystemUI/src/com/android/systemui/DualToneHandler.kt b/packages/SystemUI/src/com/android/systemui/DualToneHandler.kt
+index af810ea1bc2e..93d806b4e426 100644
+--- a/packages/SystemUI/src/com/android/systemui/DualToneHandler.kt
++++ b/packages/SystemUI/src/com/android/systemui/DualToneHandler.kt
+@@ -20,7 +20,6 @@ import android.animation.ArgbEvaluator
+ import android.content.Context
+ import android.view.ContextThemeWrapper
+ import com.android.settingslib.Utils
+-import com.android.settingslib.flags.Flags.newStatusBarIcons
+ import com.android.systemui.res.R
+ 
+ /**
+@@ -54,7 +53,8 @@ class DualToneHandler(context: Context) {
+                 Utils.getThemeAttr(context, R.attr.darkIconTheme))
+         val dualToneLightTheme = ContextThemeWrapper(context,
+                 Utils.getThemeAttr(context, R.attr.lightIconTheme))
+-        if (newStatusBarIcons()) {
++        // Classic dual-tone palette forced for this ROM; see NewStatusBarIcons.
++        if (false) {
+             darkColor = Color(
+                 android.graphics.Color.BLACK,
+                 Utils.getColorAttrDefaultColor(dualToneDarkTheme, R.attr.iconBackgroundColor),
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/connectivity/WifiIcons.java b/packages/SystemUI/src/com/android/systemui/statusbar/connectivity/WifiIcons.java
+index 1953d8dab060..0c684f777208 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/connectivity/WifiIcons.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/connectivity/WifiIcons.java
+@@ -16,7 +16,6 @@
+ 
+ package com.android.systemui.statusbar.connectivity;
+ 
+-import static com.android.settingslib.flags.Flags.newStatusBarIcons;
+ 
+ import com.android.settingslib.AccessibilityContentDescriptions;
+ import com.android.settingslib.R;
+@@ -32,7 +31,8 @@ public class WifiIcons {
+      * Check the aconfig flag to decide on which icons to use. Can be removed once the flag is gone
+      */
+     private static int[] getIconsBasedOnFlag() {
+-        if (newStatusBarIcons()) {
++        // Classic wifi icons forced for this ROM; see NewStatusBarIcons.
++        if (false) {
+             // TODO(b/396664075):
+             // The new wifi icons only define a range of [0, 3]. Since this array is indexed on
+             // level, we can simulate the range squash by mapping both level 3 to drawn-level 2, and
+@@ -58,7 +58,8 @@ public class WifiIcons {
+     public static final int[] WIFI_NO_INTERNET_ICONS = getErrorIconsBasedOnFlag();
+ 
+     private static int [] getErrorIconsBasedOnFlag() {
+-        if (newStatusBarIcons()) {
++        // Classic wifi icons forced for this ROM; see NewStatusBarIcons.
++        if (false) {
+             // See above note, new wifi icons only have 3 bars, so levels 2 and 3 are the same
+             return new int[] {
+                 R.drawable.ic_wifi_0_error,
+@@ -90,7 +91,8 @@ public class WifiIcons {
+     public static final int WIFI_NO_NETWORK = getNoNetworkBasedOnFlag();
+ 
+     private static int getNoNetworkBasedOnFlag() {
+-        if (newStatusBarIcons()) {
++        // Classic wifi icons forced for this ROM; see NewStatusBarIcons.
++        if (false) {
+             return R.drawable.ic_wifi_0;
+         } else {
+             return QS_WIFI_NO_NETWORK;
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/core/NewStatusBarIcons.kt b/packages/SystemUI/src/com/android/systemui/statusbar/core/NewStatusBarIcons.kt
+index a72f19a826fb..7ea1cc17c88f 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/core/NewStatusBarIcons.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/core/NewStatusBarIcons.kt
+@@ -32,7 +32,11 @@ object NewStatusBarIcons {
+     /** Is the refactor enabled. */
+     @JvmStatic
+     inline val isEnabled
+-        get() = Flags.newStatusBarIcons()
++        // Classic (Android 14-era) status bar icons are forced for this ROM: consistent
++        // sizing/tinting across signal, RAT, wifi and battery. Do not re-enable without
++        // also reverting the per-consumer overrides (SignalDrawable, TelephonyIcons,
++        // WifiIcons, WifiUtils, DualToneHandler, DarkIconDispatcherImpl).
++        get() = false
+ 
+     /**
+      * Called to ensure code is only run when the flag is enabled. This protects users from the
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/events/ui/view/BatteryStatusEventComposeChip.kt b/packages/SystemUI/src/com/android/systemui/statusbar/events/ui/view/BatteryStatusEventComposeChip.kt
+index d6c573cd709e..6bb83dc2fede 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/events/ui/view/BatteryStatusEventComposeChip.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/events/ui/view/BatteryStatusEventComposeChip.kt
+@@ -65,7 +65,9 @@ constructor(
+         get() = composeInner
+ 
+     init {
+-        NewStatusBarIcons.unsafeAssertInNewMode()
++        // NewStatusBarIcons.unsafeAssertInNewMode() removed: classic status bar icons are
++        // forced for this ROM (flag reads false), and this deprecated assert would throw.
++        // The chip is only constructed when the flag is enabled, so the guard is moot.
+ 
+         inflate(context, R.layout.status_bar_event_chip_compose, this)
+         roundedContainer = requireViewById(R.id.rounded_container)
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/DarkIconDispatcherImpl.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/DarkIconDispatcherImpl.java
+index 09cf935df893..7c8cf4118fdf 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/DarkIconDispatcherImpl.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/DarkIconDispatcherImpl.java
+@@ -14,7 +14,6 @@
+ 
+ package com.android.systemui.statusbar.phone;
+ 
+-import static com.android.settingslib.flags.Flags.newStatusBarIcons;
+ import static com.android.systemui.plugins.DarkIconDispatcher.getTint;
+ 
+ import android.animation.ArgbEvaluator;
+@@ -74,7 +73,9 @@ public class DarkIconDispatcherImpl implements SysuiDarkIconDispatcher,
+             LightBarTransitionsController.Factory lightBarTransitionsControllerFactory,
+             DumpManager dumpManager) {
+         mDumpManager = dumpManager;
+-        if (newStatusBarIcons()) {
++        // Classic icon tint palette forced for this ROM (keeps battery + signal tint
++        // consistent with the classic icon pipeline); see NewStatusBarIcons.
++        if (false) {
+             mDarkModeIconColorSingleTone = Color.BLACK;
+             mLightModeIconColorSingleTone = Color.WHITE;
+         } else {
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/data/model/SystemUiCarrierConfig.kt b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/data/model/SystemUiCarrierConfig.kt
+index 5f33a754a47e..6a90d6c64e4b 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/data/model/SystemUiCarrierConfig.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/data/model/SystemUiCarrierConfig.kt
+@@ -53,10 +53,13 @@ class SystemUiCarrierConfig constructor(val subId: Int, defaultConfig: Persistab
+     var isUsingDefault = true
+         private set
+ 
++    // Signal-strength inflation is forced off for this ROM so the status bar draws the
++    // true signal level (classic Android 14 behavior).
+     private val inflateSignalStrength =
+         BooleanCarrierConfig(KEY_INFLATE_SIGNAL_STRENGTH_BOOL, defaultConfig)
+     /** Flow tracking the [KEY_INFLATE_SIGNAL_STRENGTH_BOOL] carrier config */
+-    val shouldInflateSignalStrength: StateFlow<Boolean> = inflateSignalStrength.config
++    val shouldInflateSignalStrength: StateFlow<Boolean> =
++        kotlinx.coroutines.flow.MutableStateFlow(false)
+ 
+     private val showOperatorName =
+         BooleanCarrierConfig(KEY_SHOW_OPERATOR_NAME_IN_STATUSBAR_BOOL, defaultConfig)
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractor.kt b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractor.kt
+index d855c6cf62c0..d58135ffdfeb 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractor.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractor.kt
+@@ -323,13 +323,8 @@ class MobileIconInteractorImpl(
+         isInService.map { !it }.stateIn(scope, SharingStarted.WhileSubscribed(), true)
+ 
+     private val cellularShownLevel: StateFlow<Int> =
+-        combine(level, isInService, connectionRepository.inflateSignalStrength) {
+-                level,
+-                isInService,
+-                inflate ->
+-                if (isInService) {
+-                    if (inflate) level + 1 else level
+-                } else 0
++        combine(level, isInService) { level, isInService ->
++                if (isInService) level else 0
+             }
+             .stateIn(scope, SharingStarted.WhileSubscribed(), 0)
+ 
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractorKairos.kt b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractorKairos.kt
+index dd10864f61b5..e596a7180353 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractorKairos.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/domain/interactor/MobileIconInteractorKairos.kt
+@@ -311,15 +311,8 @@ class MobileIconInteractorKairosImpl(
+     private val showExclamationMarkForSatellite: State<Boolean> = isInService.map { !it }
+ 
+     private val cellularShownLevel: State<Int> =
+-        combine(level, isInService, connectionRepository.inflateSignalStrength) {
+-            level,
+-            isInService,
+-            inflate ->
+-            when {
+-                !isInService -> 0
+-                inflate -> level + 1
+-                else -> level
+-            }
++        combine(level, isInService) { level, isInService ->
++            if (isInService) level else 0
+         }
+ 
+     private val satelliteShownLevelV2: State<Int> =
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/StackedMobileBindableIcon.kt b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/StackedMobileBindableIcon.kt
+index fded5d3e685d..7e33894d4ca7 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/StackedMobileBindableIcon.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/StackedMobileBindableIcon.kt
+@@ -17,7 +17,6 @@
+ package com.android.systemui.statusbar.pipeline.mobile.ui
+ 
+ import android.content.Context
+-import com.android.settingslib.flags.Flags
+ import com.android.systemui.dagger.SysUISingleton
+ import com.android.systemui.statusbar.pipeline.icons.shared.model.BindableIcon
+ import com.android.systemui.statusbar.pipeline.icons.shared.model.ModernStatusBarViewCreator
+@@ -57,5 +56,7 @@ constructor(
+         }
+     }
+ 
+-    override val shouldBindIcon: Boolean = Flags.newStatusBarIcons()
++    // Stacked mobile icon is part of the "new status bar icons" pipeline; classic
++    // icons are forced for this ROM, so it must never bind. See NewStatusBarIcons.
++    override val shouldBindIcon: Boolean = false
+ }
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/view/ModernStatusBarMobileView.kt b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/view/ModernStatusBarMobileView.kt
+index 19d40d97900f..3ea165492600 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/view/ModernStatusBarMobileView.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/pipeline/mobile/ui/view/ModernStatusBarMobileView.kt
+@@ -61,6 +61,10 @@ class ModernStatusBarMobileView(context: Context, attrs: AttributeSet?) :
+      * into the layout xml when the flag is rolled out fully
+      */
+     fun configureLayoutForNewStatusBarIcons() {
++        // Only applies to the "new status bar icons" compact layout. Classic icons are
++        // forced for this ROM, so keep the standard layout/dimens. Guarded here so every
++        // call site (bind, onConfigurationChanged, shade carrier group) stays inert.
++        if (!NewStatusBarIcons.isEnabled) return
+         // Margins around the entire container
+         requireViewById<AlphaOptimizedLinearLayout>(R.id.mobile_group).apply {
+             val lp = layoutParams as MarginLayoutParams
