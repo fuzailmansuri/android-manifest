@@ -1,20 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
-    <!-- Remotes -->
-    <remote name="fuzailmansuri" fetch="https://github.com/fuzailmansuri/" />
 
-    <!-- Device & Vendor Trees -->
-    <project path="device/nothing/asteroids" name="android_device_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
-    <project path="vendor/nothing/asteroids" name="proprietary_vendor_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
-    <project path="hardware/nothing" name="android_hardware_nothing" remote="fuzailmansuri" revision="seventeen" />
+    <remote name="fuzail"
+            fetch="https://github.com/fuzailmansuri/"
+            sync-c="true"
+            sync-tags="false"
+            revision="seventeen" />
 
-    <!-- Kernel Sources & Devicetrees -->
-    <project path="kernel/nothing/sm7635" name="android_kernel_nothing_sm7635" remote="fuzailmansuri" revision="seventeen" />
-    <project path="kernel/nothing/sm7635-modules" name="android_kernel_nothing_sm7635-modules" remote="fuzailmansuri" revision="seventeen" />
-    <project path="kernel/nothing/sm7635-devicetrees" name="android_kernel_nothing_sm7635-devicetrees" remote="fuzailmansuri" revision="seventeen" />
+    <!-- Device Tree -->
+    <project name="android_device_nothing_asteroids"
+             path="device/nothing/asteroids"
+             remote="fuzail" />
 
-    <!-- Apps & Features -->
-    <project path="packages/apps/ParanoidGlyph" name="packages_apps_ParanoidGlyph" remote="fuzailmansuri" revision="seventeen" />
-    <project path="packages/apps/GlyphAdapter" name="packages_apps_GlyphAdapter" remote="fuzailmansuri" revision="seventeen" />
-    <project path="hardware/dolby" name="hardware_dolby" remote="fuzailmansuri" revision="seventeen" />
+    <!-- Kernel Source -->
+    <project name="android_kernel_nothing_sm7635"
+             path="kernel/nothing/sm7635"
+             remote="fuzail" />
+
+    <!-- Kernel Modules -->
+    <project name="android_kernel_nothing_sm7635-modules"
+             path="kernel/nothing/sm7635-modules"
+             remote="fuzail" />
+
+    <!-- Kernel Device Trees -->
+    <project name="android_kernel_nothing_sm7635-devicetrees"
+             path="kernel/nothing/sm7635-devicetrees"
+             remote="fuzail" />
+
+    <!-- Vendor Files -->
+    <project name="proprietary_vendor_nothing_asteroids"
+             path="vendor/nothing/asteroids"
+             remote="fuzail" />
+
+    <!-- Nothing / Glyph Apps -->
+    <project name="packages_apps_ParanoidGlyph"
+             path="packages/apps/ParanoidGlyph"
+             remote="fuzail" />
+
+    <project name="packages_apps_GlyphAdapter"
+             path="packages/apps/GlyphAdapter"
+             remote="fuzail" />
+
+    <!-- Hardware Features -->
+    <project name="hardware_dolby"
+             path="hardware/dolby"
+             remote="fuzail" />
+
+    <project name="android_hardware_nothing" 
+             path="hardware/nothing" 
+             remote="fuzail" />
+
+    <project name="android_packages_apps_DolbyAtmos"
+             path="packages/apps/DolbyAtmos"
+             remote="fuzail" />
+
 </manifest>
