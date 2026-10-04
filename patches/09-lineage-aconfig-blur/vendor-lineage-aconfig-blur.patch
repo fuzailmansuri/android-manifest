@@ -1,0 +1,100 @@
+From 45855cc020f3dc04679d69cff88cb36d849b57ab Mon Sep 17 00:00:00 2001
+From: fuzailmansuri <mfm9875@gmail.com>
+Date: Sun, 4 Oct 2026 18:16:12 +0000
+Subject: [PATCH] lineage: aconfig: Configure SystemUI notification shade and
+ lockscreen blur flags
+
+Declare trunk-stable aconfig release flag configurations for com.android.systemui
+under cp2a to support lockscreen, glanceable hub, and notification surface blurs.
+
+Change-Id: I99e3eb57816c8d388be29cfdd17a177e01e35f82
+---
+ .../blur_on_more_surfaces_flag_values.textproto             | 6 ++++++
+ .../enable_lockscreen_blur_flag_values.textproto            | 6 ++++++
+ .../glanceable_hub_blurred_background_flag_values.textproto | 6 ++++++
+ .../lockscreen_blur_for_notifications_flag_values.textproto | 6 ++++++
+ .../notification_row_transparency_flag_values.textproto     | 6 ++++++
+ .../notification_shade_blur_flag_values.textproto           | 6 ++++++
+ 6 files changed, 36 insertions(+)
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/blur_on_more_surfaces_flag_values.textproto
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/enable_lockscreen_blur_flag_values.textproto
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/glanceable_hub_blurred_background_flag_values.textproto
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/lockscreen_blur_for_notifications_flag_values.textproto
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/notification_row_transparency_flag_values.textproto
+ create mode 100644 release/aconfig/cp2a/com.android.systemui/notification_shade_blur_flag_values.textproto
+
+diff --git a/release/aconfig/cp2a/com.android.systemui/blur_on_more_surfaces_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/blur_on_more_surfaces_flag_values.textproto
+new file mode 100644
+index 0000000..7985f5e
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/blur_on_more_surfaces_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "blur_on_more_surfaces"
++  state: ENABLED
++  permission: READ_ONLY
++}
+diff --git a/release/aconfig/cp2a/com.android.systemui/enable_lockscreen_blur_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/enable_lockscreen_blur_flag_values.textproto
+new file mode 100644
+index 0000000..5aa1fce
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/enable_lockscreen_blur_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "enable_lockscreen_blur"
++  state: ENABLED
++  permission: READ_ONLY
++}
+diff --git a/release/aconfig/cp2a/com.android.systemui/glanceable_hub_blurred_background_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/glanceable_hub_blurred_background_flag_values.textproto
+new file mode 100644
+index 0000000..f54e5d3
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/glanceable_hub_blurred_background_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "glanceable_hub_blurred_background"
++  state: ENABLED
++  permission: READ_ONLY
++}
+diff --git a/release/aconfig/cp2a/com.android.systemui/lockscreen_blur_for_notifications_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/lockscreen_blur_for_notifications_flag_values.textproto
+new file mode 100644
+index 0000000..68893cd
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/lockscreen_blur_for_notifications_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "lockscreen_blur_for_notifications"
++  state: ENABLED
++  permission: READ_ONLY
++}
+diff --git a/release/aconfig/cp2a/com.android.systemui/notification_row_transparency_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/notification_row_transparency_flag_values.textproto
+new file mode 100644
+index 0000000..d902f6e
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/notification_row_transparency_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "notification_row_transparency"
++  state: ENABLED
++  permission: READ_ONLY
++}
+diff --git a/release/aconfig/cp2a/com.android.systemui/notification_shade_blur_flag_values.textproto b/release/aconfig/cp2a/com.android.systemui/notification_shade_blur_flag_values.textproto
+new file mode 100644
+index 0000000..5bb47be
+--- /dev/null
++++ b/release/aconfig/cp2a/com.android.systemui/notification_shade_blur_flag_values.textproto
+@@ -0,0 +1,6 @@
++flag_value {
++  package: "com.android.systemui"
++  name: "notification_shade_blur"
++  state: ENABLED
++  permission: READ_ONLY
++}
+-- 
+2.43.0
+

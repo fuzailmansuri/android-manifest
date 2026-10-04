@@ -1,0 +1,593 @@
+From d425bf157805285524457cf900caf49564dfe72a Mon Sep 17 00:00:00 2001
+From: fuzailmansuri <mfm9875@gmail.com>
+Date: Sun, 4 Oct 2026 18:15:31 +0000
+Subject: [PATCH] Settings: Add native DynamicBar configuration preferences
+
+Introduce dedicated DynamicBar settings under Display to configure
+status bar island presentation, keyguard chips, and event dispatch.
+
+- Implement DynamicBar preference controller and fragment under Display.
+- Register with BaseSearchIndexProvider for native Settings search indexing.
+- Use SettingsEnums.DISPLAY for standardized AOSP metrics logging.
+- Add toggles for media, charging, timers, alarms, and notifications.
+- Define preferences layout, localized strings, and resource bindings.
+
+Change-Id: I9740ca71bc3f997adaef15c86479ab66c1e3a43d
+---
+ AndroidManifest.xml                           |  16 ++
+ res/values/arrays.xml                         |  13 ++
+ res/values/strings.xml                        |  51 ++++
+ res/xml/display_settings.xml                  |   7 +
+ res/xml/dynamic_bar_settings.xml              | 143 ++++++++++++
+ src/com/android/settings/Settings.java        |   1 +
+ .../android/settings/display/DynamicBar.kt    | 220 ++++++++++++++++++
+ .../DynamicBarPreferenceController.java       |  41 ++++
+ 8 files changed, 492 insertions(+)
+ create mode 100644 res/xml/dynamic_bar_settings.xml
+ create mode 100644 src/com/android/settings/display/DynamicBar.kt
+ create mode 100644 src/com/android/settings/display/DynamicBarPreferenceController.java
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 23e503b..879dedd 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -1776,6 +1776,22 @@
+                 android:value="true" />
+         </activity>
+ 
++        <activity
++            android:name="Settings$DynamicBarActivity"
++            android:label="@string/dynamic_bar"
++            android:exported="true">
++            <intent-filter android:priority="1">
++                <action android:name="android.settings.DYNAMIC_BAR_SETTINGS" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <meta-data android:name="com.android.settings.FRAGMENT_CLASS"
++                android:value="com.android.settings.display.DynamicBar" />
++            <meta-data android:name="com.android.settings.HIGHLIGHT_MENU_KEY"
++                       android:value="@string/menu_key_display"/>
++            <meta-data android:name="com.android.settings.PRIMARY_PROFILE_CONTROLLED"
++                android:value="true" />
++        </activity>
++
+         <activity
+             android:name="Settings$NightDisplaySuggestionActivity"
+             android:enabled="@*android:bool/config_nightDisplayAvailable"
+diff --git a/res/values/arrays.xml b/res/values/arrays.xml
+index e8ce91a..63715c9 100644
+--- a/res/values/arrays.xml
++++ b/res/values/arrays.xml
+@@ -1796,4 +1796,17 @@
+         <item>Quick settings</item>
+         <item>Lockscreen</item>
+     </string-array>
++
++    <!-- Dynamic Bar -->
++    <string-array name="dynamic_bar_keyguard_battery_chip_entries" translatable="false">
++        <item>@string/dynamic_bar_keyguard_battery_chip_disabled</item>
++        <item>@string/dynamic_bar_keyguard_battery_chip_charging</item>
++        <item>@string/dynamic_bar_keyguard_battery_chip_always</item>
++    </string-array>
++
++    <string-array name="dynamic_bar_keyguard_battery_chip_values" translatable="false">
++        <item>0</item>
++        <item>1</item>
++        <item>2</item>
++    </string-array>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 3221d0e..f86d719 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -15590,4 +15590,55 @@
+     <!-- Search keywords for Human interface device access setting -->
+     <string name="keywords_access_hid">hid, human, access, device</string>
+     <!-- Access HID end -->
++
++    <!-- Dynamic Bar -->
++    <string name="dynamic_bar">Dynamic Bar</string>
++    <string name="dynamic_bar_summary">Smart status bar chip for active events like recording, media, timers, and more</string>
++    <string name="dynamic_bar_enable">Use Dynamic Bar</string>
++    <string name="dynamic_bar_enable_summary">Show an interactive pill on the status bar for active events</string>
++    <string name="dynamic_bar_keyguard_category">Lock screen</string>
++    <string name="dynamic_bar_keyguard_enable">Show on Lock screen</string>
++    <string name="dynamic_bar_keyguard_enable_summary">Display the Dynamic Bar chip above the lock icon</string>
++    <string name="dynamic_bar_keyguard_battery_chip">Battery chip</string>
++    <string name="dynamic_bar_keyguard_battery_chip_disabled">Never show</string>
++    <string name="dynamic_bar_keyguard_battery_chip_charging">When charging</string>
++    <string name="dynamic_bar_keyguard_battery_chip_always">Always show</string>
++    <string name="dynamic_bar_events">Live Events</string>
++    <string name="dynamic_bar_event_audio_recording">Audio recording</string>
++    <string name="dynamic_bar_event_audio_recording_summary">Voice recorder and audio capture</string>
++    <string name="dynamic_bar_event_media">Media playback</string>
++    <string name="dynamic_bar_event_media_summary">Now playing music and audio controls</string>
++    <string name="dynamic_bar_event_notification">Notifications</string>
++    <string name="dynamic_bar_event_notification_summary">Incoming notification alerts</string>
++    <string name="dynamic_bar_compact_notifications">Compact notifications</string>
++    <string name="dynamic_bar_compact_notifications_summary">Show notifications as a small chip first; tap to expand</string>
++    <string name="dynamic_bar_event_timer">Timer</string>
++    <string name="dynamic_bar_event_timer_summary">Countdown timer from the Clock app</string>
++    <string name="dynamic_bar_event_stopwatch">Stopwatch</string>
++    <string name="dynamic_bar_event_stopwatch_summary">Running stopwatch from the Clock app</string>
++    <string name="dynamic_bar_event_alarm">Alarm</string>
++    <string name="dynamic_bar_event_alarm_summary">Ringing and upcoming alarms</string>
++    <string name="dynamic_bar_event_charging">Charging</string>
++    <string name="dynamic_bar_event_charging_summary">Battery level when plugged in</string>
++    <string name="dynamic_bar_event_bluetooth">Bluetooth</string>
++    <string name="dynamic_bar_event_bluetooth_summary">Device connection status</string>
++    <string name="dynamic_bar_event_hotspot">Hotspot</string>
++    <string name="dynamic_bar_event_hotspot_summary">Mobile hotspot active indicator</string>
++    <string name="dynamic_bar_event_ringer">Ringer mode</string>
++    <string name="dynamic_bar_event_ringer_summary">Silent, vibrate, and ring mode changes</string>
++    <string name="dynamic_bar_event_vpn">VPN</string>
++    <string name="dynamic_bar_event_vpn_summary">Active VPN connection indicator</string>
++    <string name="dynamic_bar_event_clipboard">Clipboard</string>
++    <string name="dynamic_bar_event_clipboard_summary">Copied text and image preview</string>
++    <string name="dynamic_bar_event_torch">Flashlight</string>
++    <string name="dynamic_bar_event_torch_summary">Flashlight toggle and brightness</string>
++    <string name="dynamic_bar_event_ongoing">Ongoing activities</string>
++    <string name="dynamic_bar_event_ongoing_summary">Navigation, deliveries, and other live activities</string>
++    <string name="dynamic_bar_event_sports">Sports</string>
++    <string name="dynamic_bar_event_sports_summary">Live scores and game updates</string>
++    <string name="dynamic_bar_event_app_switch">Recent app switch</string>
++    <string name="dynamic_bar_event_app_switch_summary">Show chip when switching between recent apps</string>
++    <string name="dynamic_bar_event_biometric">Biometric unlock</string>
++    <string name="dynamic_bar_event_biometric_summary">Show chip on fingerprint or face unlock</string>
++    <string name="dynamic_bar_footer_body">Dynamic Bar transforms your status bar into an interactive hub. Chips appear and animate based on system events, giving you at-a-glance info without interrupting your workflow.\n\nSwipe between chips when multiple events are active, or tap to expand into controls.</string>
+ </resources>
+diff --git a/res/xml/display_settings.xml b/res/xml/display_settings.xml
+index 51da40d..bba852c 100644
+--- a/res/xml/display_settings.xml
++++ b/res/xml/display_settings.xml
+@@ -86,6 +86,13 @@
+             android:summary="@string/summary_placeholder"
+             android:fragment="com.android.settings.display.ScreenTimeoutSettings"
+             settings:controller="com.android.settings.display.ScreenTimeoutPreferenceController"/>
++
++        <Preference
++            android:key="dynamic_bar"
++            android:title="@string/dynamic_bar"
++            android:summary="@string/dynamic_bar_summary"
++            android:fragment="com.android.settings.display.DynamicBar"
++            settings:controller="com.android.settings.display.DynamicBarPreferenceController" />
+     </PreferenceCategory>
+ 
+     <PreferenceCategory
+diff --git a/res/xml/dynamic_bar_settings.xml b/res/xml/dynamic_bar_settings.xml
+new file mode 100644
+index 0000000..aa67e2a
+--- /dev/null
++++ b/res/xml/dynamic_bar_settings.xml
+@@ -0,0 +1,143 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2026 The Android Open Source Project
++     SPDX-License-Identifier: Apache-2.0
++-->
++<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:settings="http://schemas.android.com/apk/res-auto"
++    android:title="@string/dynamic_bar">
++
++    <com.android.settingslib.widget.MainSwitchPreference
++        android:key="ax_dynamic_bar_enabled"
++        android:title="@string/dynamic_bar_enable"
++        android:defaultValue="false" />
++
++    <PreferenceCategory
++        android:key="dynamic_bar_keyguard_category"
++        android:title="@string/dynamic_bar_keyguard_category">
++
++        <SwitchPreferenceCompat
++            android:key="ax_dynamic_bar_keyguard_enabled"
++            android:title="@string/dynamic_bar_keyguard_enable"
++            android:summary="@string/dynamic_bar_keyguard_enable_summary"
++            android:defaultValue="true" />
++
++        <ListPreference
++            android:key="ax_dynamic_bar_keyguard_battery_chip_mode"
++            android:title="@string/dynamic_bar_keyguard_battery_chip"
++            android:entries="@array/dynamic_bar_keyguard_battery_chip_entries"
++            android:entryValues="@array/dynamic_bar_keyguard_battery_chip_values"
++            android:defaultValue="1" />
++    </PreferenceCategory>
++
++    <PreferenceCategory
++        android:key="dynamic_bar_events_category"
++        android:title="@string/dynamic_bar_events">
++
++        <SwitchPreferenceCompat
++            android:key="event_media"
++            android:title="@string/dynamic_bar_event_media"
++            android:summary="@string/dynamic_bar_event_media_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_charging"
++            android:title="@string/dynamic_bar_event_charging"
++            android:summary="@string/dynamic_bar_event_charging_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_timer"
++            android:title="@string/dynamic_bar_event_timer"
++            android:summary="@string/dynamic_bar_event_timer_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_stopwatch"
++            android:title="@string/dynamic_bar_event_stopwatch"
++            android:summary="@string/dynamic_bar_event_stopwatch_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_alarm"
++            android:title="@string/dynamic_bar_event_alarm"
++            android:summary="@string/dynamic_bar_event_alarm_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_bluetooth"
++            android:title="@string/dynamic_bar_event_bluetooth"
++            android:summary="@string/dynamic_bar_event_bluetooth_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_torch"
++            android:title="@string/dynamic_bar_event_torch"
++            android:summary="@string/dynamic_bar_event_torch_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_hotspot"
++            android:title="@string/dynamic_bar_event_hotspot"
++            android:summary="@string/dynamic_bar_event_hotspot_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_ringer"
++            android:title="@string/dynamic_bar_event_ringer"
++            android:summary="@string/dynamic_bar_event_ringer_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_vpn"
++            android:title="@string/dynamic_bar_event_vpn"
++            android:summary="@string/dynamic_bar_event_vpn_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_clipboard"
++            android:title="@string/dynamic_bar_event_clipboard"
++            android:summary="@string/dynamic_bar_event_clipboard_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_audio_recording"
++            android:title="@string/dynamic_bar_event_audio_recording"
++            android:summary="@string/dynamic_bar_event_audio_recording_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_promoted_ongoing"
++            android:title="@string/dynamic_bar_event_ongoing"
++            android:summary="@string/dynamic_bar_event_ongoing_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_sports"
++            android:title="@string/dynamic_bar_event_sports"
++            android:summary="@string/dynamic_bar_event_sports_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_biometric_unlock"
++            android:title="@string/dynamic_bar_event_biometric"
++            android:summary="@string/dynamic_bar_event_biometric_summary"
++            android:defaultValue="true" />
++
++        <SwitchPreferenceCompat
++            android:key="event_app_switch"
++            android:title="@string/dynamic_bar_event_app_switch"
++            android:summary="@string/dynamic_bar_event_app_switch_summary"
++            android:defaultValue="true" />
++    </PreferenceCategory>
++
++    <PreferenceCategory
++        android:key="dynamic_bar_footer_category">
++
++        <com.android.settingslib.widget.FooterPreference
++            android:key="dynamic_bar_footer"
++            android:title="@string/dynamic_bar_footer_body"
++            android:selectable="false" />
++    </PreferenceCategory>
++
++</PreferenceScreen>
+diff --git a/src/com/android/settings/Settings.java b/src/com/android/settings/Settings.java
+index 113d349..0497b83 100644
+--- a/src/com/android/settings/Settings.java
++++ b/src/com/android/settings/Settings.java
+@@ -169,6 +169,7 @@ public class Settings extends SettingsActivity {
+     public static class NightDisplaySuggestionActivity extends NightDisplaySettingsActivity { /* empty */ }
+     public static class SmartAutoRotateSettingsActivity extends SettingsActivity { /* empty */ }
+     public static class RefreshRateSettingsActivity extends SettingsActivity { /* empty */ }
++    public static class DynamicBarActivity extends SettingsActivity { /* empty */ }
+     public static class MyDeviceInfoActivity extends SettingsActivity { /* empty */ }
+     public static class FirmwareVersionActivity extends CatalystSettingsActivity {
+         public FirmwareVersionActivity() {
+diff --git a/src/com/android/settings/display/DynamicBar.kt b/src/com/android/settings/display/DynamicBar.kt
+new file mode 100644
+index 0000000..ef06f1e
+--- /dev/null
++++ b/src/com/android/settings/display/DynamicBar.kt
+@@ -0,0 +1,220 @@
++package com.android.settings.display
++
++import android.content.ContentResolver
++import android.content.Context
++import android.database.ContentObserver
++import android.net.Uri
++import android.os.Bundle
++import android.os.Handler
++import android.os.Looper
++import android.os.UserHandle
++import android.provider.Settings
++import androidx.preference.ListPreference
++import androidx.preference.Preference
++import androidx.preference.SwitchPreferenceCompat
++import android.app.settings.SettingsEnums
++import com.android.settings.R
++import com.android.settings.SettingsPreferenceFragment
++import com.android.settings.search.BaseSearchIndexProvider
++import com.android.settingslib.search.SearchIndexable
++import com.android.settingslib.widget.MainSwitchPreference
++import org.json.JSONArray
++
++@SearchIndexable
++class DynamicBar : SettingsPreferenceFragment() {
++
++    private val resolver: ContentResolver
++        get() = requireContext().contentResolver
++
++    private val handler = Handler(Looper.getMainLooper())
++    private var settingsObserver: ContentObserver? = null
++
++    private val eventTypeIds = listOf(
++        "media",
++        "charging",
++        "timer",
++        "stopwatch",
++        "alarm",
++        "bluetooth",
++        "torch",
++        "hotspot",
++        "ringer",
++        "vpn",
++        "clipboard",
++        "audio_recording",
++        "promoted_ongoing",
++        "sports",
++        "biometric_unlock",
++        "app_switch",
++    )
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        addPreferencesFromResource(R.xml.dynamic_bar_settings)
++
++        setupMainSwitch()
++        setupKeyguardPrefs()
++        setupEventToggles()
++        registerObserver()
++    }
++
++    override fun onDestroy() {
++        super.onDestroy()
++        settingsObserver?.let { resolver.unregisterContentObserver(it) }
++    }
++
++    private fun setupMainSwitch() {
++        val mainSwitch = findPreference<MainSwitchPreference>(SETTINGS_KEY_ENABLED)
++        val isEnabled = Settings.Secure.getIntForUser(
++            resolver, SETTINGS_KEY_ENABLED, 0, UserHandle.USER_CURRENT
++        ) == 1
++        mainSwitch?.isChecked = isEnabled
++        mainSwitch?.addOnSwitchChangeListener { _, isChecked ->
++            Settings.Secure.putIntForUser(
++                resolver, SETTINGS_KEY_ENABLED, if (isChecked) 1 else 0, UserHandle.USER_CURRENT
++            )
++            updateCategoryState(isChecked)
++        }
++        updateCategoryState(isEnabled)
++    }
++
++    private fun updateCategoryState(enabled: Boolean) {
++        findPreference<Preference>("dynamic_bar_keyguard_category")?.isEnabled = enabled
++        findPreference<Preference>("dynamic_bar_events_category")?.isEnabled = enabled
++    }
++
++    private fun setupKeyguardPrefs() {
++        val keyguardPref = findPreference<SwitchPreferenceCompat>(SETTINGS_KEY_KEYGUARD_ENABLED)
++        val keyguardEnabled = Settings.Secure.getIntForUser(
++            resolver, SETTINGS_KEY_KEYGUARD_ENABLED, 1, UserHandle.USER_CURRENT
++        ) == 1
++        keyguardPref?.isChecked = keyguardEnabled
++        keyguardPref?.setOnPreferenceChangeListener { _, newValue ->
++            val checked = newValue as Boolean
++            Settings.Secure.putIntForUser(
++                resolver, SETTINGS_KEY_KEYGUARD_ENABLED, if (checked) 1 else 0, UserHandle.USER_CURRENT
++            )
++            updateKeyguardSubPrefsVisibility(checked)
++            true
++        }
++
++        val batteryModePref = findPreference<ListPreference>(SETTINGS_KEY_BATTERY_CHIP_MODE)
++        val batteryMode = Settings.Secure.getIntForUser(
++            resolver, SETTINGS_KEY_BATTERY_CHIP_MODE, 1, UserHandle.USER_CURRENT
++        )
++        batteryModePref?.value = batteryMode.toString()
++        batteryModePref?.summary = batteryModePref?.entry
++        batteryModePref?.setOnPreferenceChangeListener { pref, newValue ->
++            val mode = (newValue as String).toIntOrNull() ?: 1
++            Settings.Secure.putIntForUser(
++                resolver, SETTINGS_KEY_BATTERY_CHIP_MODE, mode, UserHandle.USER_CURRENT
++            )
++            val index = (pref as ListPreference).findIndexOfValue(newValue)
++            if (index >= 0) {
++                pref.summary = pref.entries[index]
++            }
++            true
++        }
++
++        updateKeyguardSubPrefsVisibility(keyguardEnabled)
++    }
++
++    private fun updateKeyguardSubPrefsVisibility(keyguardEnabled: Boolean) {
++        findPreference<Preference>(SETTINGS_KEY_BATTERY_CHIP_MODE)?.isEnabled = keyguardEnabled
++    }
++
++    private fun setupEventToggles() {
++        val disabledEvents = getDisabledEvents()
++
++        for (typeId in eventTypeIds) {
++            val pref = findPreference<SwitchPreferenceCompat>("event_$typeId") ?: continue
++            pref.isChecked = typeId !in disabledEvents
++            pref.setOnPreferenceChangeListener { _, newValue ->
++                val enabled = newValue as Boolean
++                toggleEvent(typeId, enabled)
++                true
++            }
++        }
++    }
++
++    private fun getDisabledEvents(): Set<String> {
++        val json = Settings.Secure.getStringForUser(
++            resolver, SETTINGS_KEY_EVENTS, UserHandle.USER_CURRENT
++        ) ?: return emptySet()
++
++        if (json.isBlank()) return emptySet()
++
++        return try {
++            val arr = JSONArray(json)
++            (0 until arr.length()).mapTo(mutableSetOf()) { arr.getString(it) }
++        } catch (_: Exception) {
++            emptySet()
++        }
++    }
++
++    private fun toggleEvent(typeId: String, enabled: Boolean) {
++        val current = getDisabledEvents()
++        val updated = if (enabled) current - typeId else current + typeId
++        val json = if (updated.isEmpty()) "" else JSONArray(updated.toList()).toString()
++        Settings.Secure.putStringForUser(
++            resolver, SETTINGS_KEY_EVENTS, json, UserHandle.USER_CURRENT
++        )
++    }
++
++    private fun registerObserver() {
++        settingsObserver = object : ContentObserver(handler) {
++            override fun onChange(selfChange: Boolean, uri: Uri?) {
++                when (uri?.lastPathSegment) {
++                    SETTINGS_KEY_ENABLED -> {
++                        val isEnabled = Settings.Secure.getIntForUser(
++                            resolver, SETTINGS_KEY_ENABLED, 0, UserHandle.USER_CURRENT
++                        ) == 1
++                        findPreference<MainSwitchPreference>(SETTINGS_KEY_ENABLED)?.isChecked = isEnabled
++                        updateCategoryState(isEnabled)
++                    }
++                    SETTINGS_KEY_EVENTS -> {
++                        val disabledEvents = getDisabledEvents()
++                        for (typeId in eventTypeIds) {
++                            findPreference<SwitchPreferenceCompat>("event_$typeId")?.isChecked =
++                                typeId !in disabledEvents
++                        }
++                    }
++                    SETTINGS_KEY_KEYGUARD_ENABLED -> {
++                        val enabled = Settings.Secure.getIntForUser(
++                            resolver, SETTINGS_KEY_KEYGUARD_ENABLED, 1, UserHandle.USER_CURRENT
++                        ) == 1
++                        findPreference<SwitchPreferenceCompat>(SETTINGS_KEY_KEYGUARD_ENABLED)?.isChecked = enabled
++                        updateKeyguardSubPrefsVisibility(enabled)
++                    }
++                }
++            }
++        }
++
++        resolver.registerContentObserver(
++            Settings.Secure.getUriFor(SETTINGS_KEY_ENABLED),
++            false, settingsObserver!!
++        )
++        resolver.registerContentObserver(
++            Settings.Secure.getUriFor(SETTINGS_KEY_EVENTS),
++            false, settingsObserver!!
++        )
++        resolver.registerContentObserver(
++            Settings.Secure.getUriFor(SETTINGS_KEY_KEYGUARD_ENABLED),
++            false, settingsObserver!!
++        )
++    }
++
++    override fun getMetricsCategory(): Int {
++        return SettingsEnums.DISPLAY
++    }
++
++    companion object {
++        const val SETTINGS_KEY_ENABLED = "ax_dynamic_bar_enabled"
++        const val SETTINGS_KEY_KEYGUARD_ENABLED = "ax_dynamic_bar_keyguard_enabled"
++        const val SETTINGS_KEY_EVENTS = "ax_dynamic_bar_events"
++        const val SETTINGS_KEY_BATTERY_CHIP_MODE = "ax_dynamic_bar_keyguard_battery_chip_mode"
++
++        @JvmField
++        val SEARCH_INDEX_DATA_PROVIDER = BaseSearchIndexProvider(R.xml.dynamic_bar_settings)
++    }
++}
+diff --git a/src/com/android/settings/display/DynamicBarPreferenceController.java b/src/com/android/settings/display/DynamicBarPreferenceController.java
+new file mode 100644
+index 0000000..70b2da5
+--- /dev/null
++++ b/src/com/android/settings/display/DynamicBarPreferenceController.java
+@@ -0,0 +1,41 @@
++package com.android.settings.display;
++
++import android.content.Context;
++import android.os.UserHandle;
++import android.provider.Settings;
++
++import androidx.preference.Preference;
++
++import com.android.settings.R;
++import com.android.settings.core.BasePreferenceController;
++
++public class DynamicBarPreferenceController extends BasePreferenceController {
++
++    private static final String SETTING_KEY = "ax_dynamic_bar_enabled";
++
++    public DynamicBarPreferenceController(Context context, String preferenceKey) {
++        super(context, preferenceKey);
++    }
++
++    @Override
++    public int getAvailabilityStatus() {
++        return AVAILABLE;
++    }
++
++    @Override
++    public CharSequence getSummary() {
++        boolean enabled = Settings.Secure.getIntForUser(
++                mContext.getContentResolver(),
++                SETTING_KEY,
++                0,
++                UserHandle.USER_CURRENT
++        ) == 1;
++        return mContext.getString(enabled ? R.string.switch_on_text : R.string.switch_off_text);
++    }
++
++    @Override
++    public void updateState(Preference preference) {
++        super.updateState(preference);
++        preference.setSummary(getSummary());
++    }
++}
+-- 
+2.43.0
+

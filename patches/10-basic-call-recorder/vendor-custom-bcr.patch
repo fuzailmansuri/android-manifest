@@ -1,0 +1,31 @@
+From eb11c7da2c5c1ac0c94299d76d3fcc556e5a811b Mon Sep 17 00:00:00 2001
+From: fuzailmansuri <mfm9875@gmail.com>
+Date: Sun, 4 Oct 2026 18:16:20 +0000
+Subject: [PATCH] custom: config: Enable Basic Call Recorder and dialer
+ integrations
+
+Inherit vendor/bcr configuration in common.mk and configure BCR dialer
+recording support across target device products.
+
+Change-Id: I5c65d84211a0d4d22270b8bbf8d8abb7852c3496
+---
+ config/common.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/config/common.mk b/config/common.mk
+index 65c7154..717e1ba 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -16,6 +16,9 @@ TARGET_CALL_RECORDING_SUPPORTED ?= true
+ ifneq ($(TARGET_CALL_RECORDING_SUPPORTED),false)
+ PRODUCT_COPY_FILES += \
+     vendor/custom/config/permissions/com.google.android.apps.dialer.call_recording_audio.features.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/com.google.android.apps.dialer.call_recording_audio.features.xml
++
++# BCR (Basic Call Recorder)
++$(call inherit-product-if-exists, vendor/bcr/bcr.mk)
+ endif
+ 
+ # Charger
+-- 
+2.43.0
+

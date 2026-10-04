@@ -71,3 +71,65 @@ overlay), `ro.surface_flinger.supports_background_blur=1` in
 `device/nothing/asteroids/vendor.prop`, runtime gates clear. Knobs:
 `volume_dialog_background_surface_blur_radius` (23dp),
 `notification_background_blur_radius`, `volume_dialog_view_background_blur`.
+
+---
+
+## 07 — DynamicBar SystemUI Integration
+
+**Repo:** `frameworks/base`
+**Files:** SystemUI DynamicBar controllers, Compose island components, Monet accenting, and hardware-accelerated blur surfaces.
+
+```bash
+cd frameworks/base
+git apply ../../patches/07-dynamicbar-systemui/frameworks-base-dynamicbar.patch
+```
+
+## 08 — DynamicBar Settings Configuration
+
+**Repo:** `packages/apps/Settings`
+**Files:** DynamicBar preferences controller under `Settings → Display` with native search indexing (`BaseSearchIndexProvider`).
+
+```bash
+cd packages/apps/Settings
+git apply ../../patches/08-dynamicbar-settings/packages-apps-settings-dynamicbar.patch
+```
+
+## 09 — Lineage AConfig Notification & Lockscreen Blur
+
+**Repo:** `vendor/lineage`
+**Files:** Trunk stable AConfig flag pins enabling SystemUI notification and lockscreen background blur.
+
+```bash
+cd vendor/lineage
+git apply ../../patches/09-lineage-aconfig-blur/vendor-lineage-aconfig-blur.patch
+```
+
+## 10 — Basic Call Recorder (BCR) Integration
+
+**Repo:** `vendor/custom`
+**Files:** Enables Basic Call Recorder package and dialer integrations.
+
+```bash
+cd vendor/custom
+git apply ../../patches/10-basic-call-recorder/vendor-custom-bcr.patch
+```
+
+## 11 — Quickstep App Launch Blur Suppression
+
+**Repo:** `device/nothing/asteroids`
+**Files:** `device.mk`, `vendor.prop` (`ro.launcher.blur.appLaunch=0`) to eliminate SurfaceFlinger dual-Kawase frame drops during app launch.
+
+```bash
+cd device/nothing/asteroids
+git apply ../../patches/11-launcher-blur/device-nothing-asteroids-launcher-blur.patch
+```
+
+## 12 — Custom Asteroids Lunch Target
+
+**Repo:** `device/nothing/asteroids`
+**Files:** `AndroidProducts.mk`, `custom_asteroids.mk` defining `custom_asteroids` product lunch choice.
+
+```bash
+cd device/nothing/asteroids
+git apply ../../patches/12-custom-lunch/device-nothing-asteroids-custom-lunch.patch
+```

@@ -1,0 +1,48 @@
+From a0652a5a437c38b2fadd21409c95f0aa4a60b921 Mon Sep 17 00:00:00 2001
+From: fuzailmansuri <mfm9875@gmail.com>
+Date: Sun, 4 Oct 2026 18:26:20 +0000
+Subject: [PATCH] asteroids: Disable launcher blur during app launch
+
+Set ro.launcher.blur.appLaunch=0 to avoid SurfaceFlinger dual-Kawase
+frame drops when launching apps from Quickstep.
+---
+ device.mk   | 6 +++++-
+ vendor.prop | 1 +
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/device.mk b/device.mk
+index 9a99189..62ada2a 100644
+--- a/device.mk
++++ b/device.mk
+@@ -244,7 +244,7 @@ PRODUCT_PACKAGES += \
+     ueventd.qcom.rc
+ 
+ # Kernel
+- PRODUCT_COPY_FILES += \
++PRODUCT_COPY_FILES += \
+     $(LOCAL_PATH)/system_dlkm.modules.blocklist:$(TARGET_COPY_OUT_VENDOR_DLKM)/lib/modules/system_dlkm.modules.blocklist
+ 
+ # Keylayout
+@@ -531,3 +531,7 @@ PRODUCT_PACKAGES += \
+     wpa_supplicant \
+     wpa_supplicant.conf
+ 
++# Properties
++PRODUCT_VENDOR_PROPERTIES += \
++    ro.launcher.blur.appLaunch=0
++
+diff --git a/vendor.prop b/vendor.prop
+index 9d5cdef..0c4ae70 100644
+--- a/vendor.prop
++++ b/vendor.prop
+@@ -130,6 +130,7 @@ ro.surface_flinger.protected_contents=true
+ ro.surface_flinger.set_idle_timer_ms=2000
+ ro.surface_flinger.set_touch_timer_ms=200
+ ro.surface_flinger.supports_background_blur=1
++ro.launcher.blur.appLaunch=0
+ ro.surface_flinger.use_color_management=true
+ ro.surface_flinger.use_content_detection_for_refresh_rate=true
+ ro.surface_flinger.wcg_composition_dataspace=143261696
+-- 
+2.43.0
+

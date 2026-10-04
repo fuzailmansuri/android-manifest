@@ -30,7 +30,8 @@
     <!-- Vendor Files -->
     <project name="proprietary_vendor_nothing_asteroids"
              path="vendor/nothing/asteroids"
-             remote="fuzail" />
+             remote="fuzail"
+             revision="seventeen" />
 
     <!-- Nothing / Glyph Apps -->
     <project name="packages_apps_ParanoidGlyph"
@@ -49,6 +50,9 @@
     <project name="android_hardware_nothing" 
              path="hardware/nothing" 
              remote="fuzail" />
+
+    <!-- Remove existing DolbyAtmos from PixelOS to avoid duplicate path -->
+    <remove-project name="PixelOS-AOSP/android_packages_apps_DolbyAtmos" />
 
     <project name="android_packages_apps_DolbyAtmos"
              path="packages/apps/DolbyAtmos"
