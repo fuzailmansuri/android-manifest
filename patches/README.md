@@ -4,48 +4,7 @@ Custom patches for the YAAP Android 17 (cp2a) tree, device `nothing/asteroids` (
 All `git apply` commands are run **from inside the target repo** unless noted.
 Verify before applying: `git apply --check <patch>`.
 
-Apply 04 before 05 (sizing assumes the classic icon layout).
-
 ---
-
-## 04 — Classic (A14-style) status bar icons, consistently forced
-
-**Repo:** `frameworks/base`
-**Files (13):** `NewStatusBarIcons.kt`, `SignalDrawable.java`, `TelephonyIcons.java`,
-`WifiUtils.kt`, `WifiIcons.java`, `DarkIconDispatcherImpl.java`, `DualToneHandler.kt`,
-`StackedMobileBindableIcon.kt`, `SystemUiCarrierConfig.kt`, `MobileIconInteractor.kt`,
-`MobileIconInteractorKairos.kt`, `BatteryStatusEventComposeChip.kt`,
-`ModernStatusBarMobileView.kt`
-
-```
-cd frameworks/base
-git apply ../../patches/04-classic-statusbar-icons/frameworks-base-classic-icons.patch
-```
-
-Notes: bypasses the aconfig `new_status_bar_icons` gate in every consumer
-(bp3a pins it ENABLED READ_ONLY, so the classic pipeline is forced at the call
-sites). Also defuses `unsafeAssertInNewMode()` crash path and guards
-`configureLayoutForNewStatusBarIcons()` so the 12sp `_updated` slots can never
-reapply. This fixes the "small + broken battery tint" half-state from the
-original community patch.
-
-## 05 — Icon sizing: 17.6sp set + tightened spacing
-
-**Repo:** `frameworks/base`
-**Files:** `packages/SystemUI/res/values/dimens.xml`,
-`packages/SystemUI/res/layout/mobile_signal_group.xml`,
-`core/res/res/values/dimens.xml`
-
-```
-cd frameworks/base
-git apply ../../patches/05-icon-sizing/frameworks-base-icon-sizing.patch
-```
-
-Values: mobile signal + wifi 17.6sp (equal weight, same 24dp canvas), system
-icons (`status_bar_system_icon_size`) 17.6dp, battery 15.2sp / 9.1sp wide
-(stock 0.867 ratio kept), battery extra spacing 2sp, system icon spacing 2.5sp,
-RAT `paddingStart` 1dp -> 0.5dp (tightens signal<->4G/5G gap). Tablet buckets
-(sw1500/sw1900) untouched. **Apply 04 first — 05 assumes the classic layout.**
 
 ## 06 — Frosted volume / lockscreen / notifications (EvX-style)
 
@@ -104,16 +63,6 @@ cd vendor/lineage
 git apply ../../patches/09-lineage-aconfig-blur/vendor-lineage-aconfig-blur.patch
 ```
 
-## 10 — Basic Call Recorder (BCR) Integration
-
-**Repo:** `vendor/custom`
-**Files:** Enables Basic Call Recorder package and dialer integrations.
-
-```bash
-cd vendor/custom
-git apply ../../patches/10-basic-call-recorder/vendor-custom-bcr.patch
-```
-
 ## 11 — Quickstep App Launch Blur Suppression
 
 **Repo:** `device/nothing/asteroids`
@@ -122,14 +71,4 @@ git apply ../../patches/10-basic-call-recorder/vendor-custom-bcr.patch
 ```bash
 cd device/nothing/asteroids
 git apply ../../patches/11-launcher-blur/device-nothing-asteroids-launcher-blur.patch
-```
-
-## 12 — Custom Asteroids Lunch Target
-
-**Repo:** `device/nothing/asteroids`
-**Files:** `AndroidProducts.mk`, `custom_asteroids.mk` defining `custom_asteroids` product lunch choice.
-
-```bash
-cd device/nothing/asteroids
-git apply ../../patches/12-custom-lunch/device-nothing-asteroids-custom-lunch.patch
 ```
