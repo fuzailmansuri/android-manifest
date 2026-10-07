@@ -8,15 +8,25 @@
     <!-- Device & Vendor Trees (Fuzail Mansuri) -->
     <project path="device/nothing/asteroids" name="android_device_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
     <project path="vendor/nothing/asteroids" name="proprietary_vendor_nothing_asteroids" remote="fuzailmansuri" revision="seventeen" />
-    <project path="hardware/nothing" name="android_hardware_nothing" remote="fuzailmansuri" revision="lineage-23.2" />
+    <project path="hardware/nothing" name="android_hardware_nothing" remote="fuzailmansuri" revision="seventeen" />
 
-    <!-- Kernel Sources (NullDebris) -->
-    <project path="kernel/nothing/sm7635" name="android_kernel_nothing_sm7635" remote="nulldebris" revision="6.6/lineage-23.2" />
+    <!-- Kernel: ACK 6.6.144 merges + KernelSU-Next/SuSFS. Use revision="test" for the clean kernel. -->
+    <project path="kernel/nothing/sm7635" name="android_kernel_nothing_sm7635" remote="fuzailmansuri" revision="seventeen-ksun-susfs" />
     <project path="kernel/nothing/sm7635-modules" name="android_kernel_nothing_sm7635-modules" remote="nulldebris" revision="6.6/lineage-24.0" />
     <project path="kernel/nothing/sm7635-devicetrees" name="android_kernel_nothing_sm7635-devicetrees" remote="nulldebris" revision="6.6/lineage-23.2" />
 
-    <!-- Apps & Features (NullDebris) -->
-    <project path="packages/apps/ParanoidGlyph" name="packages_apps_ParanoidGlyph" remote="nulldebris" revision="lineage-24.0" />
-    <project path="packages/apps/GlyphAdapter" name="packages_apps_GlyphAdapter" remote="nulldebris" revision="15" />
+    <!-- Glyph (Fuzail Mansuri, synced with danascape lineage-24.0) -->
+    <project path="packages/apps/ParanoidGlyph" name="packages_apps_ParanoidGlyph" remote="fuzailmansuri" revision="seventeen" />
+    <project path="packages/apps/GlyphAdapter" name="packages_apps_GlyphAdapter" remote="fuzailmansuri" revision="seventeen" />
+
+    <!-- Launcher with the -1 screen client, and the Glance feed (private: sync needs GitHub credentials) -->
+    <remove-project name="LineageOS/android_packages_apps_Launcher3" />
+    <project path="packages/apps/Launcher3" name="Launcher3" remote="fuzailmansuri" revision="lineage-24.0" />
+    <project path="packages/apps/Launcher3Feed" name="Launcher3Feed" remote="fuzailmansuri" revision="android-17.0" />
+
+    <!-- SystemUI: export the Glanceable Hub widget service to the feed -->
+    <remove-project name="LineageOS/android_frameworks_base" />
+    <project path="frameworks/base" name="android_frameworks_base" remote="fuzailmansuri" revision="lineage-24.0" groups="pdk-cw-fs,pdk-fs,sysui-studio" />
+
     <project path="hardware/dolby" name="hardware_dolby" remote="nulldebris" revision="lunaris" />
 </manifest>
