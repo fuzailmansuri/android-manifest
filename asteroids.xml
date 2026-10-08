@@ -28,5 +28,13 @@
     <remove-project name="LineageOS/android_frameworks_base" />
     <project path="frameworks/base" name="android_frameworks_base" remote="fuzailmansuri" revision="lineage-24.0" groups="pdk-cw-fs,pdk-fs,sysui-studio" />
 
+    <!-- Smoothness and ANR fixes picked from AOSPA and neoteric-os -->
+    <remove-project name="LineageOS/android_frameworks_native" />
+    <project path="frameworks/native" name="android_frameworks_native" remote="fuzailmansuri" revision="lineage-24.0" groups="pdk,sysui-studio" />
+    <remove-project name="LineageOS/android_frameworks_av" />
+    <project path="frameworks/av" name="android_frameworks_av" remote="fuzailmansuri" revision="lineage-24.0" groups="pdk,sysui-studio" />
+    <remove-project name="LineageOS/android_packages_apps_Settings" />
+    <project path="packages/apps/Settings" name="android_packages_apps_Settings" remote="fuzailmansuri" revision="lineage-24.0" groups="pdk-fs,pdk-cw-tvc,sysui-studio" />
+
     <project path="hardware/dolby" name="hardware_dolby" remote="nulldebris" revision="lunaris" />
 </manifest>
