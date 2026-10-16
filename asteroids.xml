@@ -54,8 +54,14 @@
     <!-- Remove existing DolbyAtmos from PixelOS to avoid duplicate path -->
     <remove-project name="PixelOS-AOSP/android_packages_apps_DolbyAtmos" optional="true" />
 
-    <project name="android_packages_apps_DolbyAtmos"
-             path="packages/apps/DolbyAtmos"
-             remote="fuzail" />
+    <remote name="crdroid"
+            fetch="https://github.com/crdroidandroid/"
+            sync-c="true"
+            sync-tags="false" />
+
+    <project name="android_packages_apps_LunarisDolby"
+             path="packages/apps/LunarisDolby"
+             remote="crdroid"
+             revision="17.0" />
 
 </manifest>
