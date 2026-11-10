@@ -11,8 +11,8 @@ Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing P
 ### 1. Place in `.repo/local_manifests/`
 ```bash
 mkdir -p .repo/local_manifests
-curl -o .repo/local_manifests/asteroids.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/seventeen/asteroids.xml
-curl -o .repo/local_manifests/lineage_24.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/seventeen/lineage_24.xml
+curl -o .repo/local_manifests/asteroids.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/yaap-17/asteroids.xml
+curl -o .repo/local_manifests/lineage_24.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/yaap-17/lineage_24.xml
 ```
 
 ### 2. Sync Source Tree
