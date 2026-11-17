@@ -179,7 +179,7 @@
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/libfmjni" name="android_vendor_qcom_opensource_libfmjni" groups="qcom" />
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/libqspa" name="android_vendor_qcom_opensource_libqspa" groups="qcom,k2c-le" />
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/libvmmem" name="android_vendor_qcom_opensource_libvmmem" groups="qcom,k2c-le" />
-  <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/power" name="android_vendor_qcom_opensource_power" groups="qcom,kaanapali-vendor" />
+  <project remote="fuzail" revision="lineage-24.0" path="vendor/qcom/opensource/power" name="vendor_qcom_opensource_power" groups="qcom,kaanapali-vendor" />
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/thermal-engine" name="android_vendor_qcom_opensource_thermal-engine" groups="qcom,kaanapali-vendor" />
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/usb" name="android_vendor_qcom_opensource_usb" groups="qcom,kaanapali-vendor" />
   <project remote="lineage" revision="lineage-24.0" path="vendor/qcom/opensource/vibrator" name="android_vendor_qcom_opensource_vibrator" groups="qcom,kaanapali-vendor" />

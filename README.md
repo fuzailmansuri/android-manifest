@@ -3,7 +3,7 @@
 Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing Phone (3a) / Phone (3a) (`asteroids`, SM7635 SoC).
 
 ## Included Manifests
-- **`asteroids.xml`**: Device, proprietary vendor, kernel, hardware, and Glyph packages for Nothing Phone (3a) (`asteroids`).
+- **`asteroids.xml`**: Device, proprietary vendor, kernel, hardware, runtime integration fixes and shared UI source for Nothing Phone (3a) (`asteroids`).
 - **`lineage_24.xml`**: LineageOS 24.0 HAL, telephony, and Qualcomm common project overrides.
 
 ## Setup Instructions
@@ -20,10 +20,22 @@ curl -o .repo/local_manifests/lineage_24.xml https://raw.githubusercontent.com/f
 repo sync -c --no-clone-bundle --optimized-fetch --prune -j$(nproc --all)
 ```
 
-### 3. Build Environment
+### 3. Integrate Shared UI Source
+```bash
+python3 packages/apps/Customizations/tools/integrate.py "$PWD" --rom yaap-17
+python3 packages/apps/Customizations/tools/integrate.py "$PWD" --rom yaap-17 --apply
+```
+
+The UI source and framework, SystemUI, Settings and Launcher adapters live in
+[android_packages_apps_Customizations](https://github.com/fuzailmansuri/android_packages_apps_Customizations).
+The first command checks compatibility; the second applies the checked files and
+hooks. Existing conflicting edits stop integration before writing. Current build
+and runtime validation limits are recorded in that repository's `VALIDATION.md`.
+
+### 4. Build Environment
 ```bash
 source build/envsetup.sh
-lunch yaap_asteroids-user
+lunch yaap_asteroids cp2a user
 m yaap
 ```
 
