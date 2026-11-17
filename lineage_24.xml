@@ -196,6 +196,7 @@
   <project remote="lineage" path="lineage/contributors-cloud-generator" name="contributors-cloud-generator" groups="tools" revision="main" />
   <project remote="lineage" path="lineage/scripts" name="scripts" groups="tools" revision="main" />
   <!-- Telephony Lineage 24.0 -->
+  <project remote="aosp" path="device/sample" name="device/sample" groups="pdk" revision="refs/tags/android-17.0.0_r1" />
   <project remote="lineage" path="frameworks/opt/telephony" name="android_frameworks_opt_telephony" revision="lineage-24.0" />
   <project remote="lineage" path="packages/modules/Telephony" name="android_packages_modules_Telephony" groups="pdk" revision="lineage-24.0" />
   <project remote="lineage" path="packages/services/Telephony" name="android_packages_services_Telephony" groups="pdk-cw-fs,pdk-fs" revision="lineage-24.0" />
