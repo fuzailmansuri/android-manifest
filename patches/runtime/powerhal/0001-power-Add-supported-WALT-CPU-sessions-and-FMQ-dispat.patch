@@ -1,0 +1,904 @@
+From 589f66906be8bf7d9eea6c9b3008e0d41794563b Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 12:35:13 +0000
+Subject: [PATCH] power: Add supported WALT CPU sessions and FMQ dispatch
+
+Select an independent CPU ADPF backend for Asteroids without the failing
+Picard registration gate. Use the existing task-load resource, validate
+inputs and session ownership, and release boosts across lifecycle changes.
+Advertise only implemented session capabilities and preserve existing boosts.
+
+Mechanism reference: https://github.com/AOSPA/android_vendor_qcom-opensource_power/commit/b9054aaa32b5b76653a6753adc1f95862f709b9a
+
+Validation: service/test sources compiled in an earlier focused attempt and
+policy checks passed; the test executable was not linked/run, and device
+validation remains pending under the build hold.
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ Android.bp                         |  37 +++-
+ Power.cpp                          |  48 +++-
+ PowerHintSession.h                 |   4 +
+ PowerHintSessionWalt.cpp           | 340 +++++++++++++++++++++++++++++
+ PowerHintSessionWalt.h             |  56 +++++
+ tests/PowerHintSessionWaltTest.cpp | 240 ++++++++++++++++++++
+ 6 files changed, 717 insertions(+), 8 deletions(-)
+ create mode 100644 PowerHintSessionWalt.cpp
+ create mode 100644 PowerHintSessionWalt.h
+ create mode 100644 tests/PowerHintSessionWaltTest.cpp
+
+diff --git a/Android.bp b/Android.bp
+index 6579bd3..891af95 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -4,6 +4,25 @@ cc_library_headers {
+     export_include_dirs: ["."],
+ }
+ 
++cc_test {
++    name: "qti_power_walt_session_test",
++    host_supported: true,
++    defaults: ["android.hardware.power-ndk_shared"],
++    vendor: true,
++    srcs: ["PowerHintSessionWalt.cpp", "tests/PowerHintSessionWaltTest.cpp"],
++    cflags: ["-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter"],
++    shared_libs: [
++        "android.hardware.common-V2-ndk",
++        "android.hardware.common.fmq-V1-ndk",
++        "libbase",
++        "libbinder_ndk",
++        "libcutils",
++        "libfmq",
++        "liblog",
++        "libutils",
++    ],
++}
++
+ cc_binary {
+     name: "android.hardware.power-service-qti",
+     defaults: [
+@@ -33,6 +52,9 @@ cc_binary {
+     }) + select(soong_config_variable("qtipower", "tap_to_wake_node"), {
+         any @ node: ["-DTAP_TO_WAKE_NODE=\"" + node + "\""],
+         default: [],
++    }) + select(soong_config_variable("qtipower", "walt_adpf"), {
++        true: ["-DWALT_ADPF"],
++        default: [],
+     }),
+ 
+     srcs: [
+@@ -43,8 +65,10 @@ cc_binary {
+         "hint-data.c",
+         "Power.cpp",
+         "main.cpp",
+-        "PowerHintSession.cpp",
+-    ] + select(soong_config_variable("ANDROID", "target_board_platform"), {
++    ] + select(soong_config_variable("qtipower", "walt_adpf"), {
++        true: ["PowerHintSessionWalt.cpp"],
++        default: ["PowerHintSession.cpp"],
++    }) + select(soong_config_variable("ANDROID", "target_board_platform"), {
+         "msm8996": ["power-8996.c"],
+         "msm8937": ["power-8937.c"],
+         "msm8953": ["power-8953.c"],
+@@ -101,6 +125,9 @@ cc_fuzz {
+     ] + select(soong_config_variable("qtipower", "interaction_boost"), {
+         true: ["-DINTERACTION_BOOST"],
+         default: [],
++    }) + select(soong_config_variable("qtipower", "walt_adpf"), {
++        true: ["-DWALT_ADPF"],
++        default: [],
+     }),
+ 
+     srcs: [
+@@ -111,8 +138,10 @@ cc_fuzz {
+         "hint-data.c",
+         "Power.cpp",
+         "fuzzer.cpp",
+-        "PowerHintSession.cpp",
+-    ],
++    ] + select(soong_config_variable("qtipower", "walt_adpf"), {
++        true: ["PowerHintSessionWalt.cpp"],
++        default: ["PowerHintSession.cpp"],
++    }),
+ 
+     header_libs: [
+         "libhardware_headers",
+diff --git a/Power.cpp b/Power.cpp
+index be9a1f6..b4bb024 100644
+--- a/Power.cpp
++++ b/Power.cpp
+@@ -54,6 +54,7 @@ static const char* pkg = "QTI PowerHAL";
+ #include <android-base/strings.h>
+ #include <fmq/AidlMessageQueue.h>
+ #include <fmq/EventFlag.h>
++#include <bitset>
+ #include <thread>
+ 
+ #include <aidl/android/hardware/power/BnPower.h>
+@@ -205,6 +206,9 @@ ndk::ScopedAStatus Power::isBoostSupported(Boost type, bool* _aidl_return) {
+ 
+ ndk::ScopedAStatus Power::getCpuHeadroom(const CpuHeadroomParams& cpuHeadroomParams,
+                                          CpuHeadroomResult* cpuHeadroomResult) {
++#ifdef WALT_ADPF
++    return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
++#endif
+     LOG(INFO) << "Power getCpuHeadroom";
+     int durationMillis = cpuHeadroomParams.calculationWindowMillis;
+     if (durationMillis > CPU_MAX_DURATION_MS) {
+@@ -226,6 +230,9 @@ ndk::ScopedAStatus Power::getCpuHeadroom(const CpuHeadroomParams& cpuHeadroomPar
+ 
+ ndk::ScopedAStatus Power::getGpuHeadroom(const GpuHeadroomParams& gpuHeadroomParams,
+                                          GpuHeadroomResult* gpuHeadroomResult) {
++#ifdef WALT_ADPF
++    return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
++#endif
+     LOG(INFO) << "Power getGpuHeadroom";
+     int calculationType = -1;
+     if (gpuHeadroomParams.calculationType == GpuHeadroomParams::CalculationType::MIN) {
+@@ -258,28 +265,42 @@ ndk::ScopedAStatus Power::createHintSession(int32_t tgid, int32_t uid,
+                                             int64_t durationNanos,
+                                             std::shared_ptr<IPowerHintSession>* _aidl_return) {
+     LOG(INFO) << "Power createHintSession";
++#ifdef WALT_ADPF
++    if (tgid <= 0 || uid < 0 || durationNanos <= 0 || !validPowerSessionThreads(threadIds)) {
++        *_aidl_return = nullptr;
++        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
++    }
++#endif
+     if (threadIds.size() == 0) {
+         LOG(ERROR) << "Error: threadIds.size() shouldn't be " << threadIds.size();
+         *_aidl_return = nullptr;
+         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
+     }
+     *_aidl_return = setPowerHintSession(tgid, uid, threadIds, durationNanos);
++    if (!*_aidl_return) return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
+     return ndk::ScopedAStatus::ok();
+ }
+ 
+ ndk::ScopedAStatus Power::createHintSessionWithConfig(
+         int32_t tgid, int32_t uid, const std::vector<int32_t>& threadIds, int64_t durationNanos,
+         SessionTag tag, SessionConfig* config, std::shared_ptr<IPowerHintSession>* _aidl_return) {
++#ifdef WALT_ADPF
++    if (tag < SessionTag::OTHER || tag > SessionTag::SYSUI) {
++#else
+     if (tag != SessionTag::OTHER && tag != SessionTag::SURFACEFLINGER && tag != SessionTag::HWUI &&
+         tag != SessionTag::GAME) {
++#endif
+         return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
+     }
+     auto out = createHintSession(tgid, uid, threadIds, durationNanos, _aidl_return);
+-    static_cast<PowerHintSessionImpl*>(_aidl_return->get())->getSessionConfig(config);
++    if (out.isOk() && *_aidl_return) (*_aidl_return)->getSessionConfig(config);
+     return out;
+ }
+ 
+-ndk::ScopedAStatus Power::getSessionChannel(int32_t, int32_t, ChannelConfig* _aidl_return) {
++ndk::ScopedAStatus Power::getSessionChannel(int32_t tgid, int32_t uid, ChannelConfig* _aidl_return) {
++#ifdef WALT_ADPF
++    return getPowerSessionChannel(tgid, uid, _aidl_return);
++#else
+     static AidlMessageQueue<ChannelMessage, SynchronizedReadWrite> stubQueue{20, true};
+     static std::thread stubThread([&] {
+         ChannelMessage data;
+@@ -293,10 +314,15 @@ ndk::ScopedAStatus Power::getSessionChannel(int32_t, int32_t, ChannelConfig* _ai
+     _aidl_return->writeFlagBitmask = 0x02;
+     _aidl_return->eventFlagDescriptor = std::nullopt;
+     return ndk::ScopedAStatus::ok();
++#endif
+ }
+ 
+-ndk::ScopedAStatus Power::closeSessionChannel(int32_t, int32_t) {
++ndk::ScopedAStatus Power::closeSessionChannel(int32_t tgid, int32_t uid) {
++#ifdef WALT_ADPF
++    return closePowerSessionChannel(tgid, uid);
++#else
+     return ndk::ScopedAStatus::ok();
++#endif
+ }
+ 
+ ndk::ScopedAStatus Power::getHintSessionPreferredRate(int64_t* outNanoseconds) {
+@@ -318,8 +344,8 @@ int64_t bitsForEnum() {
+  */
+ ndk::ScopedAStatus Power::getSupportInfo(SupportInfo* _aidl_return) {
+     static SupportInfo supportInfo = {.usesSessions = true,
+-                                      .modes = 0b10001100,
+                                       .boosts = 0b0,
++                                      .modes = 0b10001100,
+                                       .sessionHints = 0b1100001111,
+                                       .sessionModes = 0b0011,
+                                       .sessionTags = 0b001111,
+@@ -343,6 +369,20 @@ ndk::ScopedAStatus Power::getSupportInfo(SupportInfo* _aidl_return) {
+                                       }};
+     // Copy the support object into the binder
+     *_aidl_return = supportInfo;
++#ifdef WALT_ADPF
++    _aidl_return->modes = 0;
++    for (Mode mode : ndk::enum_range<Mode>()) {
++        bool supported = false;
++        isModeSupported(mode, &supported);
++        if (supported) _aidl_return->modes |= int64_t{1} << static_cast<int32_t>(mode);
++    }
++    _aidl_return->boosts = int64_t{1} << static_cast<int32_t>(Boost::INTERACTION);
++    _aidl_return->sessionHints = 0b1111;
++    _aidl_return->sessionModes = 0;
++    _aidl_return->sessionTags = bitsForEnum<SessionTag>();
++    _aidl_return->headroom.isCpuSupported = false;
++    _aidl_return->headroom.isGpuSupported = false;
++#endif
+     return ndk::ScopedAStatus::ok();
+ }
+ 
+diff --git a/PowerHintSession.h b/PowerHintSession.h
+index e3dc3b5..eea4631 100644
+--- a/PowerHintSession.h
++++ b/PowerHintSession.h
+@@ -6,6 +6,9 @@
+ #ifndef __POWERHINTSESSION__
+ #define __POWERHINTSESSION__
+ 
++#ifdef WALT_ADPF
++#include "PowerHintSessionWalt.h"
++#else
+ #include <aidl/android/hardware/power/BnPowerHintSession.h>
+ #include <aidl/android/hardware/power/SessionHint.h>
+ #include <aidl/android/hardware/power/SessionMode.h>
+@@ -66,4 +69,5 @@ class PowerHintSessionImpl : public aidl::android::hardware::power::BnPowerHintS
+     int mTLBHandle;
+     int mTLBoostSum;
+ };
++#endif  // WALT_ADPF
+ #endif /* __POWERHINTSESSION__ */
+diff --git a/PowerHintSessionWalt.cpp b/PowerHintSessionWalt.cpp
+new file mode 100644
+index 0000000..6499a3f
+--- /dev/null
++++ b/PowerHintSessionWalt.cpp
+@@ -0,0 +1,340 @@
++/*
++ * SPDX-License-Identifier: BSD-3-Clause-Clear
++ */
++
++#define LOG_TAG "QTI PowerHAL"
++
++#include "PowerHintSessionWalt.h"
++#include "utils.h"
++
++#include <android-base/logging.h>
++#include <fmq/AidlMessageQueue.h>
++#include <fmq/EventFlag.h>
++#include <algorithm>
++#include <array>
++#include <atomic>
++#include <climits>
++#include <cstdlib>
++#include <map>
++#include <thread>
++#include <unordered_map>
++
++using namespace aidl::android::hardware::power;
++using aidl::android::hardware::common::fmq::SynchronizedReadWrite;
++using android::AidlMessageQueue;
++using android::hardware::EventFlag;
++
++namespace {
++constexpr int kTaskLoadBoost = 0x43C04000;
++constexpr size_t kMaxBoostThreads = 5;
++constexpr int kMaxBoost = 80;
++constexpr int kBoostStep = 10;
++constexpr uint32_t kReadMask = 0x01;
++constexpr uint32_t kWriteMask = 0x02;
++
++std::mutex sSessionLock;
++int64_t sNextSessionId = 1;
++std::unordered_map<int32_t, std::weak_ptr<PowerHintSessionImpl>> sSessions;
++
++class SessionChannel {
++  public:
++    SessionChannel(int32_t tgid, int32_t uid) : mTgid(tgid), mUid(uid) {
++        if (mQueue.isValid() &&
++            EventFlag::createEventFlag(mQueue.getEventFlagWord(), &mFlag) == android::OK) {
++            mWorker = std::thread([this] { run(); });
++        }
++    }
++
++    ~SessionChannel() {
++        mStopping = true;
++        if (mFlag) mFlag->wake(kWriteMask);
++        if (mWorker.joinable()) mWorker.join();
++        if (mFlag) EventFlag::deleteEventFlag(&mFlag);
++    }
++
++    bool isValid() const { return mQueue.isValid() && mFlag; }
++
++    void getConfig(ChannelConfig* config) {
++        config->channelDescriptor = mQueue.dupeDesc();
++        config->eventFlagDescriptor = std::nullopt;
++        config->readFlagBitmask = kReadMask;
++        config->writeFlagBitmask = kWriteMask;
++    }
++
++  private:
++    void run() {
++        while (!mStopping) {
++            uint32_t state = 0;
++            mFlag->wait(kWriteMask, &state, 0, true);
++            while (!mStopping && mQueue.availableToRead() > 0) {
++                ChannelMessage message;
++                if (!mQueue.read(&message, 1)) break;
++                mFlag->wake(kReadMask);
++                std::shared_ptr<PowerHintSessionImpl> session;
++                {
++                    std::lock_guard lock(sSessionLock);
++                    auto it = sSessions.find(message.sessionID);
++                    if (it != sSessions.end()) session = it->second.lock();
++                }
++                // An app can write arbitrary IDs into its FMQ.
++                if (session && session->belongsTo(mTgid, mUid)) session->dispatch(message);
++            }
++        }
++    }
++
++    const int32_t mTgid;
++    const int32_t mUid;
++    AidlMessageQueue<ChannelMessage, SynchronizedReadWrite> mQueue{20, true};
++    EventFlag* mFlag = nullptr;
++    std::atomic<bool> mStopping{false};
++    std::thread mWorker;
++};
++
++std::mutex sChannelLock;
++std::map<std::pair<int32_t, int32_t>, std::unique_ptr<SessionChannel>> sChannels;
++}  // namespace
++
++bool validPowerSessionThreads(const std::vector<int32_t>& threadIds) {
++    return !threadIds.empty() && std::all_of(threadIds.begin(), threadIds.end(), [](int32_t tid) {
++        // The resource packs a positive TID into the upper 24 bits.
++        return tid > 0 && tid <= (INT_MAX >> 8);
++    });
++}
++
++std::shared_ptr<IPowerHintSession> setPowerHintSession(int32_t tgid, int32_t uid,
++                                                       const std::vector<int32_t>& threadIds,
++                                                       int64_t durationNanos) {
++    if (tgid <= 0 || uid < 0 || durationNanos <= 0 || !validPowerSessionThreads(threadIds)) {
++        return nullptr;
++    }
++    int32_t id;
++    {
++        std::lock_guard lock(sSessionLock);
++        // Never reuse an ID: stale FMQ messages must not reach a new session.
++        if (sNextSessionId > INT_MAX) return nullptr;
++        id = static_cast<int32_t>(sNextSessionId++);
++    }
++    auto session =
++            ndk::SharedRefBase::make<PowerHintSessionImpl>(id, tgid, uid, threadIds, durationNanos);
++    {
++        std::lock_guard lock(sSessionLock);
++        sSessions.emplace(id, session);
++    }
++    return session;
++}
++
++int64_t getSessionPreferredRate() {
++    return 16666666L;
++}
++
++PowerHintSessionImpl::PowerHintSessionImpl(int32_t id, int32_t tgid, int32_t uid,
++                                           const std::vector<int32_t>& threadIds,
++                                           int64_t durationNanos)
++    : mId(id), mTgid(tgid), mUid(uid), mThreadIds(threadIds), mTargetDuration(durationNanos) {}
++
++PowerHintSessionImpl::~PowerHintSessionImpl() {
++    close();
++}
++
++bool PowerHintSessionImpl::belongsTo(int32_t tgid, int32_t uid) const {
++    return mTgid == tgid && mUid == uid;
++}
++
++void PowerHintSessionImpl::releaseBoostLocked() {
++    if (mHandle > 0) release_request(mHandle);
++    mHandle = -1;
++}
++
++bool PowerHintSessionImpl::applyBoostLocked(int boost) {
++    boost = std::clamp(boost, -kMaxBoost, kMaxBoost);
++    if (boost == mBoost && (boost == 0 || mHandle > 0)) return true;
++    releaseBoostLocked();
++    mBoost = 0;
++    if (boost == 0) return true;
++
++    std::array<int, kMaxBoostThreads * 2> resources{};
++    const size_t count = std::min(mThreadIds.size(), kMaxBoostThreads);
++    for (size_t i = 0; i < count; ++i) {
++        resources[2 * i] = kTaskLoadBoost;
++        resources[2 * i + 1] = (mThreadIds[i] << 8) | std::abs(boost) | (boost < 0 ? 0x80 : 0);
++    }
++    const int handle =
++            interaction_with_handle(-1, 0, static_cast<int>(count * 2), resources.data());
++    if (handle <= 0) {
++        LOG(ERROR) << "Unable to acquire WALT task-load boost";
++        return false;
++    }
++    mHandle = handle;
++    mBoost = boost;
++    return true;
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::updateTargetWorkDuration(int64_t durationNanos) {
++    std::lock_guard lock(mLock);
++    if (!mClosed && durationNanos > 0 && mTargetDuration != durationNanos) {
++        mTargetDuration = durationNanos;
++        mDownCount = 0;
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::reportActualWorkDuration(
++        const std::vector<WorkDuration>& durations) {
++    std::lock_guard lock(mLock);
++    if (mClosed || mPaused || durations.empty()) return ndk::ScopedAStatus::ok();
++    int64_t actual = 0;
++    for (const auto& duration : durations) {
++        if (duration.durationNanos <= 0 || duration.cpuDurationNanos < 0 ||
++            duration.gpuDurationNanos < 0 || duration.timeStampNanos < 0 ||
++            duration.workPeriodStartTimestampNanos < 0) {
++            return ndk::ScopedAStatus::ok();
++        }
++        actual = std::max(actual, duration.durationNanos);
++    }
++    if (actual >= mTargetDuration - mTargetDuration / 8) {
++        applyBoostLocked(mBoost + kBoostStep);
++        mDownCount = 0;
++    } else if (++mDownCount >= 3) {
++        applyBoostLocked(mBoost - kBoostStep);
++        mDownCount = 0;
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::pause() {
++    std::lock_guard lock(mLock);
++    if (!mClosed) {
++        releaseBoostLocked();
++        mPaused = true;
++        mDownCount = 0;
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::resume() {
++    std::lock_guard lock(mLock);
++    if (!mClosed && mPaused) {
++        mPaused = false;
++        applyBoostLocked(mBoost);
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::close() {
++    std::lock_guard lock(mLock);
++    if (!mClosed) {
++        mClosed = true;
++        releaseBoostLocked();
++        mBoost = 0;
++        mThreadIds.clear();
++        std::lock_guard registryLock(sSessionLock);
++        sSessions.erase(mId);
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::sendHint(SessionHint hint) {
++    std::lock_guard lock(mLock);
++    if (mClosed || mPaused) return ndk::ScopedAStatus::ok();
++    switch (hint) {
++        case SessionHint::CPU_LOAD_UP:
++            applyBoostLocked(mBoost + kBoostStep);
++            mDownCount = 0;
++            break;
++        case SessionHint::CPU_LOAD_DOWN:
++            applyBoostLocked(mBoost - kBoostStep);
++            mDownCount = 0;
++            break;
++        case SessionHint::CPU_LOAD_RESET:
++            applyBoostLocked(0);
++            mDownCount = 0;
++            break;
++        case SessionHint::CPU_LOAD_RESUME:
++            applyBoostLocked(mBoost);
++            mDownCount = 0;
++            break;
++        default:
++            break;
++    }
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::setThreads(const std::vector<int32_t>& threadIds) {
++    if (!validPowerSessionThreads(threadIds)) {
++        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
++    }
++    std::lock_guard lock(mLock);
++    if (mClosed) return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
++    releaseBoostLocked();
++    mBoost = 0;
++    mDownCount = 0;
++    mThreadIds = threadIds;
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::setMode(SessionMode, bool) {
++    // No Picard pipeline or efficiency contract is implemented by this backend.
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus PowerHintSessionImpl::getSessionConfig(SessionConfig* config) {
++    config->id = mId;
++    return ndk::ScopedAStatus::ok();
++}
++
++void PowerHintSessionImpl::dispatch(const ChannelMessage& message) {
++    {
++        std::lock_guard lock(mLock);
++        if (mClosed || message.timeStampNanos <= 0 ||
++            message.timeStampNanos < mLastChannelTimestamp)
++            return;
++        mLastChannelTimestamp = message.timeStampNanos;
++    }
++    using Tag = ChannelMessage::ChannelMessageContents::Tag;
++    switch (message.data.getTag()) {
++        case Tag::targetDuration:
++            updateTargetWorkDuration(message.data.get<Tag::targetDuration>());
++            break;
++        case Tag::hint:
++            sendHint(message.data.get<Tag::hint>());
++            break;
++        case Tag::mode: {
++            const auto& mode = message.data.get<Tag::mode>();
++            setMode(mode.modeInt, mode.enabled);
++            break;
++        }
++        case Tag::workDuration: {
++            const auto& data = message.data.get<Tag::workDuration>();
++            WorkDuration duration;
++            duration.timeStampNanos = message.timeStampNanos;
++            duration.durationNanos = data.durationNanos;
++            duration.cpuDurationNanos = data.cpuDurationNanos;
++            duration.gpuDurationNanos = data.gpuDurationNanos;
++            duration.workPeriodStartTimestampNanos = data.workPeriodStartTimestampNanos;
++            reportActualWorkDuration({duration});
++            break;
++        }
++        default:
++            break;
++    }
++}
++
++ndk::ScopedAStatus getPowerSessionChannel(int32_t tgid, int32_t uid, ChannelConfig* config) {
++    if (tgid <= 0 || uid < 0) return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
++    std::lock_guard lock(sChannelLock);
++    const auto key = std::make_pair(tgid, uid);
++    auto it = sChannels.find(key);
++    if (it == sChannels.end()) {
++        auto channel = std::make_unique<SessionChannel>(tgid, uid);
++        if (!channel->isValid()) return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
++        it = sChannels.emplace(key, std::move(channel)).first;
++    }
++    it->second->getConfig(config);
++    return ndk::ScopedAStatus::ok();
++}
++
++ndk::ScopedAStatus closePowerSessionChannel(int32_t tgid, int32_t uid) {
++    std::lock_guard lock(sChannelLock);
++    sChannels.erase(std::make_pair(tgid, uid));
++    return ndk::ScopedAStatus::ok();
++}
+diff --git a/PowerHintSessionWalt.h b/PowerHintSessionWalt.h
+new file mode 100644
+index 0000000..ed8660a
+--- /dev/null
++++ b/PowerHintSessionWalt.h
+@@ -0,0 +1,56 @@
++/*
++ * SPDX-License-Identifier: BSD-3-Clause-Clear
++ */
++
++#pragma once
++
++#include <aidl/android/hardware/power/BnPowerHintSession.h>
++#include <aidl/android/hardware/power/ChannelConfig.h>
++#include <aidl/android/hardware/power/ChannelMessage.h>
++#include <mutex>
++
++class PowerHintSessionImpl : public aidl::android::hardware::power::BnPowerHintSession {
++  public:
++    PowerHintSessionImpl(int32_t id, int32_t tgid, int32_t uid,
++                         const std::vector<int32_t>& threadIds, int64_t durationNanos);
++    ~PowerHintSessionImpl() override;
++    ndk::ScopedAStatus updateTargetWorkDuration(int64_t durationNanos) override;
++    ndk::ScopedAStatus reportActualWorkDuration(
++            const std::vector<aidl::android::hardware::power::WorkDuration>& durations) override;
++    ndk::ScopedAStatus pause() override;
++    ndk::ScopedAStatus resume() override;
++    ndk::ScopedAStatus close() override;
++    ndk::ScopedAStatus sendHint(aidl::android::hardware::power::SessionHint hint) override;
++    ndk::ScopedAStatus setThreads(const std::vector<int32_t>& threadIds) override;
++    ndk::ScopedAStatus setMode(aidl::android::hardware::power::SessionMode mode,
++                               bool enabled) override;
++    ndk::ScopedAStatus getSessionConfig(
++            aidl::android::hardware::power::SessionConfig* config) override;
++    bool belongsTo(int32_t tgid, int32_t uid) const;
++    void dispatch(const aidl::android::hardware::power::ChannelMessage& message);
++
++  private:
++    bool applyBoostLocked(int boost);
++    void releaseBoostLocked();
++
++    const int32_t mId;
++    const int32_t mTgid;
++    const int32_t mUid;
++    std::mutex mLock;
++    std::vector<int32_t> mThreadIds;
++    int64_t mTargetDuration;
++    int64_t mLastChannelTimestamp = 0;
++    unsigned int mDownCount = 0;
++    int mHandle = -1;
++    int mBoost = 0;
++    bool mPaused = false;
++    bool mClosed = false;
++};
++
++bool validPowerSessionThreads(const std::vector<int32_t>& threadIds);
++std::shared_ptr<aidl::android::hardware::power::IPowerHintSession> setPowerHintSession(
++        int32_t tgid, int32_t uid, const std::vector<int32_t>& threadIds, int64_t durationNanos);
++int64_t getSessionPreferredRate();
++ndk::ScopedAStatus getPowerSessionChannel(int32_t tgid, int32_t uid,
++                                          aidl::android::hardware::power::ChannelConfig* config);
++ndk::ScopedAStatus closePowerSessionChannel(int32_t tgid, int32_t uid);
+diff --git a/tests/PowerHintSessionWaltTest.cpp b/tests/PowerHintSessionWaltTest.cpp
+new file mode 100644
+index 0000000..be5a986
+--- /dev/null
++++ b/tests/PowerHintSessionWaltTest.cpp
+@@ -0,0 +1,240 @@
++/*
++ * SPDX-License-Identifier: BSD-3-Clause-Clear
++ */
++
++#include "../PowerHintSessionWalt.h"
++#include "../utils.h"
++
++#include <fmq/AidlMessageQueue.h>
++#include <gtest/gtest.h>
++#include <chrono>
++#include <climits>
++#include <condition_variable>
++#include <map>
++#include <optional>
++
++using namespace aidl::android::hardware::power;
++using aidl::android::hardware::common::fmq::SynchronizedReadWrite;
++using Contents = ChannelMessage::ChannelMessageContents;
++using Tag = Contents::Tag;
++
++namespace {
++std::mutex sPerfLock;
++std::condition_variable sPerfChanged;
++std::map<int, std::vector<int>> sLocks;
++std::vector<std::vector<int>> sRequests;
++int sNextHandle = 1;
++std::optional<int> sFailure;
++}  // namespace
++
++extern "C" int interaction_with_handle(int, int duration, int count, int resources[]) {
++    std::lock_guard lock(sPerfLock);
++    EXPECT_EQ(duration, 0);
++    sRequests.emplace_back(resources, resources + count);
++    if (sFailure.has_value()) {
++        const int result = *sFailure;
++        sFailure.reset();
++        return result;
++    }
++    const int handle = sNextHandle++;
++    sLocks.emplace(handle, sRequests.back());
++    sPerfChanged.notify_all();
++    return handle;
++}
++
++extern "C" void release_request(int handle) {
++    std::lock_guard lock(sPerfLock);
++    EXPECT_EQ(sLocks.erase(handle), 1u);
++    sPerfChanged.notify_all();
++}
++
++class WaltSessionTest : public testing::Test {
++  protected:
++    void SetUp() override {
++        std::lock_guard lock(sPerfLock);
++        ASSERT_TRUE(sLocks.empty());
++        sRequests.clear();
++        sFailure.reset();
++    }
++
++    void TearDown() override {
++        std::lock_guard lock(sPerfLock);
++        EXPECT_TRUE(sLocks.empty());
++    }
++
++    std::shared_ptr<IPowerHintSession> session(int32_t tgid = 100, int32_t uid = 1000) {
++        return setPowerHintSession(tgid, uid, {101, 102}, 16000000);
++    }
++
++    std::vector<int> request() {
++        std::lock_guard lock(sPerfLock);
++        return sRequests.empty() ? std::vector<int>{} : sRequests.back();
++    }
++
++    ChannelMessage hint(const std::shared_ptr<IPowerHintSession>& session, int64_t timestamp = 1) {
++        SessionConfig config;
++        EXPECT_TRUE(session->getSessionConfig(&config).isOk());
++        ChannelMessage message;
++        message.sessionID = static_cast<int32_t>(config.id);
++        message.timeStampNanos = timestamp;
++        message.data = Contents::make<Tag::hint>(SessionHint::CPU_LOAD_UP);
++        return message;
++    }
++};
++
++TEST_F(WaltSessionTest, ValidatesCreationAndThreadReplacement) {
++    EXPECT_EQ(setPowerHintSession(100, 1000, {}, 1), nullptr);
++    EXPECT_EQ(setPowerHintSession(100, 1000, {0}, 1), nullptr);
++    EXPECT_EQ(setPowerHintSession(100, 1000, {INT_MAX}, 1), nullptr);
++    EXPECT_EQ(setPowerHintSession(100, 1000, {101}, 0), nullptr);
++    auto s = session();
++    ASSERT_NE(s, nullptr);
++    EXPECT_EQ(s->setThreads({}).getExceptionCode(), EX_ILLEGAL_ARGUMENT);
++    EXPECT_EQ(s->setThreads({-1}).getExceptionCode(), EX_ILLEGAL_ARGUMENT);
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    EXPECT_EQ(request(),
++              (std::vector<int>{0x43C04000, (101 << 8) | 10, 0x43C04000, (102 << 8) | 10}));
++}
++
++TEST_F(WaltSessionTest, FailedReplacementDoesNotLeaveFictitiousBoost) {
++    auto s = session();
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    {
++        std::lock_guard lock(sPerfLock);
++        sFailure = -1;
++    }
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    {
++        std::lock_guard lock(sPerfLock);
++        EXPECT_TRUE(sLocks.empty());
++        sFailure.reset();
++    }
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    ASSERT_FALSE(request().empty());
++    EXPECT_EQ(request()[1] & 0xff, 10);
++}
++
++TEST_F(WaltSessionTest, ZeroHandleIsFailure) {
++    auto s = session();
++    // Make the fake return zero, as the real helper can when no client is loaded.
++    {
++        std::lock_guard lock(sPerfLock);
++        sFailure = 0;
++    }
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    EXPECT_EQ(request()[1] & 0xff, 10);
++}
++
++TEST_F(WaltSessionTest, PauseResumeCloseAndReplacementReleaseHandles) {
++    auto s = session();
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    s->pause();
++    s->pause();
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    s->resume();
++    EXPECT_EQ(request()[1] & 0xff, 10);
++    s->setThreads({103});
++    s->sendHint(SessionHint::CPU_LOAD_DOWN);
++    EXPECT_EQ(request(), (std::vector<int>{0x43C04000, (103 << 8) | 0x80 | 10}));
++    s->pause();
++    s->close();
++    s->resume();
++    s->sendHint(SessionHint::CPU_LOAD_UP);
++    EXPECT_EQ(s->setThreads({104}).getExceptionCode(), EX_ILLEGAL_STATE);
++}
++
++TEST_F(WaltSessionTest, TimingFeedbackAndBounds) {
++    auto s = session();
++    WorkDuration duration;
++    duration.durationNanos = 16000000;
++    for (int i = 0; i < 20; ++i) s->reportActualWorkDuration({duration});
++    EXPECT_EQ(request()[1] & 0xff, 80);
++    duration.durationNanos = 1000;
++    for (int i = 0; i < 3; ++i) s->reportActualWorkDuration({duration});
++    EXPECT_EQ(request()[1] & 0xff, 70);
++    duration.durationNanos = -1;
++    s->reportActualWorkDuration({duration});
++    EXPECT_EQ(request()[1] & 0xff, 70);
++    s->sendHint(SessionHint::GPU_LOAD_SPIKE);
++    s->setMode(SessionMode::GRAPHICS_PIPELINE, true);
++    EXPECT_EQ(request()[1] & 0xff, 70);
++}
++
++TEST_F(WaltSessionTest, FmqRoutesByIdAndOwnerAndStopsOnClose) {
++    auto owner = session();
++    auto foreign = session(200, 1000);
++    SessionConfig ownerConfig, foreignConfig;
++    owner->getSessionConfig(&ownerConfig);
++    foreign->getSessionConfig(&foreignConfig);
++    EXPECT_NE(ownerConfig.id, foreignConfig.id);
++    ChannelConfig config, repeated;
++    ASSERT_TRUE(getPowerSessionChannel(100, 1000, &config).isOk());
++    ASSERT_TRUE(getPowerSessionChannel(100, 1000, &repeated).isOk());
++    android::AidlMessageQueue<ChannelMessage, SynchronizedReadWrite> queue(config.channelDescriptor,
++                                                                           false);
++    android::AidlMessageQueue<ChannelMessage, SynchronizedReadWrite> sameQueue(
++            repeated.channelDescriptor, false);
++    ASSERT_TRUE(queue.isValid());
++    ASSERT_TRUE(sameQueue.isValid());
++    auto wrongOwner = hint(foreign);
++    auto valid = hint(owner);
++    ASSERT_TRUE(queue.writeBlocking(&wrongOwner, 1, config.readFlagBitmask, config.writeFlagBitmask,
++                                    100000000));
++    ASSERT_TRUE(sameQueue.writeBlocking(&valid, 1, repeated.readFlagBitmask,
++                                        repeated.writeFlagBitmask, 100000000));
++    {
++        std::unique_lock lock(sPerfLock);
++        EXPECT_TRUE(sPerfChanged.wait_for(lock, std::chrono::seconds(1),
++                                          [] { return !sLocks.empty(); }));
++    }
++    EXPECT_TRUE(closePowerSessionChannel(100, 1000).isOk());
++    {
++        std::lock_guard lock(sPerfLock);
++        EXPECT_EQ(sRequests.size(), 1u);
++    }
++    owner->close();
++    EXPECT_TRUE(getPowerSessionChannel(100, 1000, &config).isOk());
++    EXPECT_TRUE(closePowerSessionChannel(100, 1000).isOk());
++}
++
++TEST_F(WaltSessionTest, FmqDispatchesTimingAndRejectsMalformedAndStaleMessages) {
++    auto s = session();
++    ChannelConfig config;
++    ASSERT_TRUE(getPowerSessionChannel(100, 1000, &config).isOk());
++    android::AidlMessageQueue<ChannelMessage, SynchronizedReadWrite> queue(config.channelDescriptor,
++                                                                           false);
++    std::vector<ChannelMessage> messages;
++    auto message = hint(s, 10);
++    message.data = Contents::make<Tag::targetDuration>(int64_t{4000000});
++    messages.push_back(message);
++    WorkDurationFixedV1 duration;
++    duration.durationNanos = 5000000;
++    duration.cpuDurationNanos = 5000000;
++    message.data = Contents::make<Tag::workDuration>(duration);
++    messages.push_back(message);
++    Contents::SessionModeSetter mode;
++    mode.modeInt = SessionMode::GRAPHICS_PIPELINE;
++    mode.enabled = true;
++    message.data = Contents::make<Tag::mode>(mode);
++    messages.push_back(message);
++    duration.durationNanos = -1;
++    message.data = Contents::make<Tag::workDuration>(duration);
++    messages.push_back(message);
++    messages.push_back(hint(s, 0));
++    messages.push_back(hint(s, 9));
++    messages.push_back(hint(s, 11));
++    EXPECT_TRUE(queue.writeBlocking(messages.data(), messages.size(), config.readFlagBitmask,
++                                    config.writeFlagBitmask, 100000000));
++    {
++        std::unique_lock lock(sPerfLock);
++        EXPECT_TRUE(sPerfChanged.wait_for(lock, std::chrono::seconds(1),
++                                          [] { return sRequests.size() >= 2; }));
++    }
++    closePowerSessionChannel(100, 1000);
++    {
++        std::lock_guard lock(sPerfLock);
++        ASSERT_EQ(sRequests.size(), 2u);
++        EXPECT_EQ(sRequests.back()[1] & 0xff, 20);
++    }
++}

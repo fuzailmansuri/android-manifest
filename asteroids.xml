@@ -62,49 +62,6 @@
              remote="crdroid"
              revision="17.0" />
 
-    <!-- Runtime integration fixes -->
-    <remove-project path="hardware/lineage/compat" />
-    <project name="hardware_lineage_compat"
-             path="hardware/lineage/compat"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="frameworks/native" />
-    <project name="frameworks_native"
-             path="frameworks/native"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="device/lineage/sepolicy" />
-    <project name="device_lineage_sepolicy"
-             path="device/lineage/sepolicy"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="system/sepolicy" />
-    <project name="system_sepolicy"
-             path="system/sepolicy"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="vendor/yaap" />
-    <project name="vendor_yaap"
-             path="vendor/yaap"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="system/core" />
-    <project name="android_system_core"
-             path="system/core"
-             remote="fuzail"
-             revision="seventeen" />
-
-    <remove-project path="system/netd" />
-    <project name="system_netd"
-             path="system/netd"
-             remote="fuzail"
-             revision="seventeen" />
-
     <!-- Shared UI source and YAAP adapters -->
     <project name="android_packages_apps_Customizations"
              path="packages/apps/Customizations"

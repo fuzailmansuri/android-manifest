@@ -1,0 +1,22 @@
+From 05e3822b98860d437bb64db0c67b192d1b539217 Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 00:01:29 +0000
+Subject: [PATCH 1/2] config: Load local release signing overrides
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ config/version.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/config/version.mk b/config/version.mk
+index eade9b0..0e50ab1 100644
+--- a/config/version.mk
++++ b/config/version.mk
+@@ -32,6 +32,7 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+ 
+ # Signing
+ ifneq (eng,$(TARGET_BUILD_VARIANT))
++$(call inherit-product-if-exists, vendor/yaap/signing/keys/keys.mk)
+ ifneq (,$(wildcard vendor/yaap/signing/keys/releasekey.pk8))
+ PRODUCT_DEFAULT_DEV_CERTIFICATE := vendor/yaap/signing/keys/releasekey
+ PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir $(PRODUCT_DEFAULT_DEV_CERTIFICATE))

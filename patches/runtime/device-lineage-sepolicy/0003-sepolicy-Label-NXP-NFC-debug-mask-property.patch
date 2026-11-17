@@ -1,0 +1,45 @@
+From aea0d6d70938bc5b61c258f7ee8a2a0cc9228bbf Mon Sep 17 00:00:00 2001
+From: chandu078 <chandudyavanapelli03@gmail.com>
+Date: Sun, 27 Sep 2026 06:50:37 +0000
+Subject: [PATCH 3/4] sepolicy: Label NXP NFC debug mask property
+
+avc: denied { set } for property=persist.vendor.nfc.nxp.lx_debug_mask
+scontext=u:r:hal_nfc_default:s0
+tcontext=u:object_r:vendor_default_prop:s0
+tclass=property_service permissive=0
+
+Change-Id: I6003b8cbe3a5671204a8e0a262e2c21236b3af1c
+(cherry picked from commit 05c422d99e5a4e44acc02f090a56ada263b5c55b)
+---
+ common/private/property_contexts | 1 +
+ common/public/property.te        | 2 +-
+ common/vendor/hal_nfc_default.te | 2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/common/private/property_contexts b/common/private/property_contexts
+index 6e95e76..6d88392 100644
+--- a/common/private/property_contexts
++++ b/common/private/property_contexts
+@@ -7,6 +7,7 @@ vendor.camera.aux.packagelist          u:object_r:camera2_extensions_prop:s0
+ # NFC
+ persist.vendor.nfc.config_file_name     u:object_r:vendor_persist_nfc_prop:s0 exact string
+ persist.vendor.nfc.fw_file_name         u:object_r:vendor_persist_nfc_prop:s0 exact string
++persist.vendor.nfc.nxp.lx_debug_mask    u:object_r:vendor_persist_nfc_prop:s0 exact string
+ 
+ # Radio
+ ro.telephony.use_old_mnc_mcc_format    u:object_r:telephony_config_prop:s0
+diff --git a/common/public/property.te b/common/public/property.te
+index 74e6a9b..acae4b2 100644
+--- a/common/public/property.te
++++ b/common/public/property.te
+@@ -1,2 +1,2 @@
+ # NFC
+-system_vendor_config_prop(vendor_persist_nfc_prop)
++system_public_prop(vendor_persist_nfc_prop)
+diff --git a/common/vendor/hal_nfc_default.te b/common/vendor/hal_nfc_default.te
+index 91d4346..01d858c 100644
+--- a/common/vendor/hal_nfc_default.te
++++ b/common/vendor/hal_nfc_default.te
+@@ -1 +1 @@
+-get_prop(hal_nfc_default, vendor_persist_nfc_prop)
++set_prop(hal_nfc_default, vendor_persist_nfc_prop)

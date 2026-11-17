@@ -1,0 +1,55 @@
+From 2de93f418cc95c9a8e519bfa681f46d8c65baa48 Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 12:35:13 +0000
+Subject: [PATCH] sepolicy: Preserve the frozen public attribute surface
+
+Restore sdcard_posix_contextmount_type to public policy and keep the new
+init_dir_mutation_exempt attribute private without changing allow rules.
+
+Validation: Asteroids policy freeze and neverallow checks passed.
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ private/attributes | 4 ++--
+ public/attributes  | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/private/attributes b/private/attributes
+index e8e004c..9126954 100644
+--- a/private/attributes
++++ b/private/attributes
+@@ -18,8 +18,8 @@ attribute sdk_sandbox_current;
+ # Common to adbd and adbd_tradeinmode.
+ attribute adbd_common;
+ 
+-# All types used for sdcard_posix context= mounts.
+-attribute sdcard_posix_contextmount_type;
++# Allowlisted domains that may violate the domain:dir restrictions on init.
++attribute init_dir_mutation_exempt;
+ 
+ # Provides access to platform update services.
+ # WARNING: USING THE update_provider ATTRIBUTE WILL CAUSE CTS TO FAIL!
+diff --git a/public/attributes b/public/attributes
+index 5fbdfd9..add1a4d 100644
+--- a/public/attributes
++++ b/public/attributes
+@@ -21,6 +21,9 @@ attribute fs_type;
+ # All types used for context= mounts.
+ attribute contextmount_type;
+ 
++# All types used for sdcard_posix context= mounts.
++attribute sdcard_posix_contextmount_type;
++
+ # All types referencing a FUSE filesystem.
+ # When mounting a new FUSE filesystem, the fscontext= option should be used to
+ # set a domain-specific type with this attribute. See app_fusefs for an
+@@ -61,9 +64,6 @@ attribute vendor_file_type;
+ attribute proc_type;
+ expandattribute proc_type false;
+ 
+-# Allowlisted domains that may violate the domain:dir restrictions on init
+-attribute init_dir_mutation_exempt;
+-
+ # Types in /proc/net, excluding qtaguid types.
+ # TODO(b/9496886) Lock down access to /proc/net.
+ # This attribute is used to audit access to proc_net. it is temporary and will

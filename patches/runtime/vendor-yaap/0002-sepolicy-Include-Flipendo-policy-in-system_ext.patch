@@ -1,0 +1,23 @@
+From 7340181e2b7991da74f869fe03b69a3a3630a434 Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 13:11:12 +0000
+Subject: [PATCH 2/2] sepolicy: Include Flipendo policy in system_ext
+
+Flipendo installs in system_ext and its domain carries coredomain. Select its policy as system_ext private policy so checkseapp no longer rejects the core app context in vendor seapp_contexts.
+---
+ config/sepolicy.mk | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/config/sepolicy.mk b/config/sepolicy.mk
+index 275ec12..e10bc50 100644
+--- a/config/sepolicy.mk
++++ b/config/sepolicy.mk
+@@ -16,5 +16,7 @@
+ #
+ 
+ BOARD_SEPOLICY_DIRS += \
+-	hardware/google/pixel-sepolicy/flipendo \
+ 	hardware/google/pixel-sepolicy/turbo_adapter
++
++SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \
++	hardware/google/pixel-sepolicy/flipendo

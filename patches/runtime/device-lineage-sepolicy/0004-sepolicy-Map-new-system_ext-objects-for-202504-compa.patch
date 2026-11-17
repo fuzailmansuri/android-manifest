@@ -1,0 +1,30 @@
+From 05bf658d4ee589d43515dbabd4e84f6b9721c6ff Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 12:35:13 +0000
+Subject: [PATCH 4/4] sepolicy: Map new system_ext objects for 202504
+ compatibility
+
+List the empty-policy placeholder and vendor_persist_nfc_prop in new_objects
+so earlier public policy mappings account for the current system_ext types.
+
+Validation: focused Treble compatibility checks passed.
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ common/private/compat/202504/202504.ignore.cil | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 common/private/compat/202504/202504.ignore.cil
+
+diff --git a/common/private/compat/202504/202504.ignore.cil b/common/private/compat/202504/202504.ignore.cil
+new file mode 100644
+index 0000000..1142bae
+--- /dev/null
++++ b/common/private/compat/202504/202504.ignore.cil
+@@ -0,0 +1,7 @@
++;; These system_ext public types have no analogue in the platform's 202504 policy.
++(type new_objects)
++(typeattribute new_objects)
++(typeattributeset new_objects
++  ( new_objects
++    dummy_type_meant_to_prevent_selinux_compilation_from_failing_when_system_ext_public_dir_has_nothing_but_attributes
++    vendor_persist_nfc_prop))

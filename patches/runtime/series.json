@@ -1,0 +1,133 @@
+{
+  "format": 1,
+  "repositories": [
+    {
+      "path": "hardware/lineage/compat",
+      "upstream": "https://github.com/yaap/hardware_lineage_compat",
+      "branch": "seventeen",
+      "baseline": "df3745aa58b39e5288e423cbfea436041780defd",
+      "source_commit": "9bfcd51141b41e661de29cff4e1849a8279200df",
+      "target_tree": "9e1b492612c2192046d77916637d2402dbd19931",
+      "patches": [
+        {
+          "file": "hardware-lineage-compat/0001-compat-Correct-legacy-graphics-and-audio-ABI-bridges.patch",
+          "sha256": "9b2f34919232fcf4f01700f84a85aeec1dc7fe35af902e061e0d13c5c6cd5441"
+        }
+      ]
+    },
+    {
+      "path": "frameworks/native",
+      "upstream": "https://github.com/yaap/frameworks_native",
+      "branch": "seventeen",
+      "baseline": "cc7e9b60913c9b5c0b76462b45912f5815d98309",
+      "source_commit": "1da8bc74f98f87000641e72c24393589dc5ec285",
+      "target_tree": "b82ecbeade2f7ae94e3b0c265c91b581cc7e5fdb",
+      "patches": [
+        {
+          "file": "frameworks-native/0001-gui-Forward-legacy-display-refresh-rate-to-the-corre.patch",
+          "sha256": "79522ffab92dbe97a8b45fb9901bac291b517c30c14f4fc371499dfbf13bc126"
+        }
+      ]
+    },
+    {
+      "path": "device/lineage/sepolicy",
+      "upstream": "https://github.com/yaap/device_lineage_sepolicy",
+      "branch": "seventeen",
+      "baseline": "e31545ff1365ec77cf8a660ea034102bb46fdd07",
+      "source_commit": "05bf658d4ee589d43515dbabd4e84f6b9721c6ff",
+      "target_tree": "45336462f816ef9769ea64388849039c9e0f9adb",
+      "patches": [
+        {
+          "file": "device-lineage-sepolicy/0001-sepolicy-Relabel-aux-privapp-camera-properties.patch",
+          "sha256": "228d70b188b7b69f42b4049bf5929d50d85abc6daba79b72940d45c9b813ddb0"
+        },
+        {
+          "file": "device-lineage-sepolicy/0002-common-Expand-rules-for-AOSP-NFC-NXP-HAL-props.patch",
+          "sha256": "19a89f916ccfb1f48833388228a6192b4bede7c2fc9847b999d5e1ee8f3b0ab8"
+        },
+        {
+          "file": "device-lineage-sepolicy/0003-sepolicy-Label-NXP-NFC-debug-mask-property.patch",
+          "sha256": "069ab5ded980918f8cfbb3ec3cc3f37f89c9b7bce9df38536a777eaac67a0fad"
+        },
+        {
+          "file": "device-lineage-sepolicy/0004-sepolicy-Map-new-system_ext-objects-for-202504-compa.patch",
+          "sha256": "ed96a3fd05cc98cc956a4313ef31679cac5d329e646b41d99347b7dbbb341c6f"
+        }
+      ]
+    },
+    {
+      "path": "system/sepolicy",
+      "upstream": "https://github.com/yaap/system_sepolicy",
+      "branch": "seventeen",
+      "baseline": "98a168d264593282c13dc120dd5531e38f9cb0a7",
+      "source_commit": "2de93f418cc95c9a8e519bfa681f46d8c65baa48",
+      "target_tree": "8072f2bd99323d3d74a5fd89a6858ec23470c402",
+      "patches": [
+        {
+          "file": "system-sepolicy/0001-sepolicy-Preserve-the-frozen-public-attribute-surfac.patch",
+          "sha256": "a64e1c341a22dbc48f66974528d946c6069ba539bb393c199134be0f35b3edd4"
+        }
+      ]
+    },
+    {
+      "path": "vendor/qcom/opensource/power",
+      "upstream": "https://github.com/LineageOS/android_vendor_qcom_opensource_power",
+      "branch": "lineage-24.0",
+      "baseline": "2a237fa09a5f410e559ec8b7b3473969ac64d9bb",
+      "source_commit": "589f66906be8bf7d9eea6c9b3008e0d41794563b",
+      "target_tree": "3d5e6eb83664f377fca66afe0e985b3d6f3c91c7",
+      "patches": [
+        {
+          "file": "powerhal/0001-power-Add-supported-WALT-CPU-sessions-and-FMQ-dispat.patch",
+          "sha256": "6602913046319004d87b91beda425afa054d0a82558d301be0e1a0ee4ba3d886"
+        }
+      ]
+    },
+    {
+      "path": "vendor/yaap",
+      "upstream": "https://github.com/yaap/vendor_yaap",
+      "branch": "seventeen",
+      "baseline": "7ac9801a850fe3db9e08cadf23217a1e83495deb",
+      "source_commit": "7340181e2b7991da74f869fe03b69a3a3630a434",
+      "target_tree": "f99280c1376c6f6eae9a641bd81fdb88ea860606",
+      "patches": [
+        {
+          "file": "vendor-yaap/0001-config-Load-local-release-signing-overrides.patch",
+          "sha256": "820467a543467058f7755d8062a26ae72496498b5f935c364d4481390d0d996d"
+        },
+        {
+          "file": "vendor-yaap/0002-sepolicy-Include-Flipendo-policy-in-system_ext.patch",
+          "sha256": "da04664c0c3a7b57d8599e1329748b6de4c5cf5a727f7335aee8e13226af36af"
+        }
+      ]
+    },
+    {
+      "path": "system/core",
+      "upstream": "https://github.com/yaap/system_core",
+      "branch": "seventeen",
+      "baseline": "35122337d18c4d086be1c0d821adc70145cec0ce",
+      "source_commit": "6afec116812351ea4567e651759e365e103baa8d",
+      "target_tree": "6facc68850b257616d5b5c13c884af7a248b1499",
+      "patches": [
+        {
+          "file": "system-core/0001-libsysutils-Guard-allocation-and-truncated-ND-option.patch",
+          "sha256": "e20875e676f707f6930fcec27434f8ffb1862c5b99bc7e56f38de2db5843f734"
+        }
+      ]
+    },
+    {
+      "path": "system/netd",
+      "upstream": "https://github.com/yaap/system_netd",
+      "branch": "seventeen",
+      "baseline": "6db396c7ebc06b6b4c30039826141661e3e1ebec",
+      "source_commit": "4eccdb56a1dfcc96d0b754ab11f6c4665f6b3382",
+      "target_tree": "1df8f502f4a7c8b121aff3b057031b167502c782",
+      "patches": [
+        {
+          "file": "system-netd/0001-netd-Reject-malformed-address-and-idletimer-events.patch",
+          "sha256": "9718f3297319ad8093da36b23ccd37cdc3bb40601e9ec3f20a33d68598de028f"
+        }
+      ]
+    }
+  ]
+}

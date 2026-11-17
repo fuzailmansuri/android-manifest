@@ -1,0 +1,29 @@
+From 1da8bc74f98f87000641e72c24393589dc5ec285 Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 12:35:13 +0000
+Subject: [PATCH] gui: Forward legacy display refresh rate to the correct
+ argument
+
+Pass the invalid owner UID explicitly so the legacy createDisplay wrapper
+does not pass its requested refresh rate as an owner UID.
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ libs/gui/SurfaceComposerClient.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libs/gui/SurfaceComposerClient.cpp b/libs/gui/SurfaceComposerClient.cpp
+index d5c2bea..655e0ed 100644
+--- a/libs/gui/SurfaceComposerClient.cpp
++++ b/libs/gui/SurfaceComposerClient.cpp
+@@ -1282,7 +1282,9 @@ status_t SurfaceComposerClient::destroyVirtualDisplay(const sp<IBinder>& display
+ 
+ sp<IBinder> SurfaceComposerClient::createDisplay(const String8& displayName, bool isSecure,
+                                                  float requestedRefereshRate) {
+-    return SurfaceComposerClient::createVirtualDisplay(std::string(displayName.c_str()), isSecure, true, kEmpty, requestedRefereshRate);
++    return SurfaceComposerClient::createVirtualDisplay(std::string(displayName.c_str()), isSecure,
++                                                       true, kEmpty, gui::Uid::INVALID.val(),
++                                                       requestedRefereshRate);
+ }
+ 
+ void SurfaceComposerClient::destroyDisplay(const sp<IBinder>& displayToken) {

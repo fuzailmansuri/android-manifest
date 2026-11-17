@@ -3,7 +3,7 @@
 Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing Phone (3a) / Phone (3a) (`asteroids`, SM7635 SoC).
 
 ## Included Manifests
-- **`asteroids.xml`**: Device, proprietary vendor, kernel, hardware, runtime integration fixes and shared UI source for Nothing Phone (3a) (`asteroids`).
+- **`asteroids.xml`**: Device, proprietary vendor, kernel, hardware and shared UI source for Nothing Phone (3a) (`asteroids`).
 - **`lineage_24.xml`**: LineageOS 24.0 HAL, telephony, and Qualcomm common project overrides.
 
 ## Setup Instructions
@@ -11,8 +11,10 @@ Custom local manifests for building AOSP 17 (YAAP) and LineageOS 24 on Nothing P
 ### 1. Place in `.repo/local_manifests/`
 ```bash
 mkdir -p .repo/local_manifests
-curl -o .repo/local_manifests/asteroids.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/yaap-17/asteroids.xml
-curl -o .repo/local_manifests/lineage_24.xml https://raw.githubusercontent.com/fuzailmansuri/android-manifest/yaap-17/lineage_24.xml
+git clone --branch yaap-17 --single-branch --depth 1 \
+    https://github.com/fuzailmansuri/android-manifest.git _personal/android-manifest
+cp _personal/android-manifest/asteroids.xml .repo/local_manifests/
+cp _personal/android-manifest/lineage_24.xml .repo/local_manifests/
 ```
 
 ### 2. Sync Source Tree
@@ -20,7 +22,15 @@ curl -o .repo/local_manifests/lineage_24.xml https://raw.githubusercontent.com/f
 repo sync -c --no-clone-bundle --optimized-fetch --prune -j$(nproc --all)
 ```
 
-### 3. Integrate Shared UI Source
+### 3. Apply Runtime Patches
+
+Keep the official YAAP and LineageOS sources. Apply the ordered compatibility,
+policy, PowerHAL and netlink patches using the checked command in
+[patches/runtime/README.md](patches/runtime/README.md) before UI integration or
+building. It skips already matching trees and rejects changed baselines. Patches
+preserve the existing fixes without selecting additional forks in the manifest.
+
+### 4. Integrate Shared UI Source
 ```bash
 python3 packages/apps/Customizations/tools/integrate.py "$PWD" --rom yaap-17
 python3 packages/apps/Customizations/tools/integrate.py "$PWD" --rom yaap-17 --apply
@@ -32,7 +42,7 @@ The first command checks compatibility; the second applies the checked files and
 hooks. Existing conflicting edits stop integration before writing. Current build
 and runtime validation limits are recorded in that repository's `VALIDATION.md`.
 
-### 4. Build Environment
+### 5. Build Environment
 ```bash
 source build/envsetup.sh
 lunch yaap_asteroids cp2a user

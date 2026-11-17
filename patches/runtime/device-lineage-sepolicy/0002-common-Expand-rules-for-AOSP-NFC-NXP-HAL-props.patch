@@ -1,0 +1,62 @@
+From 49f1cb6c442fc09031847d4782e257642d8435b5 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Sun, 7 Dec 2025 09:18:26 +0000
+Subject: [PATCH 2/4] common: Expand rules for AOSP NFC NXP HAL props
+
+This labels the existing persist.vendor.nfc.config_file_name and
+the newly introduced persist.vendor.nfc.fw_file_name props.
+
+Let those be set from vendor init and of course be read by the HAL.
+
+Change-Id: I1719e174d485e2e8f9a910b696c8e9449ddb5f80
+(cherry picked from commit 80e7def8a654a46b44b1026f35283ffc47d62906)
+---
+ common/private/property_contexts | 4 ++++
+ common/public/property.te        | 2 ++
+ common/vendor/hal_nfc_default.te | 1 +
+ common/vendor/vendor_init.te     | 3 +++
+ 4 files changed, 10 insertions(+)
+ create mode 100644 common/public/property.te
+ create mode 100644 common/vendor/hal_nfc_default.te
+
+diff --git a/common/private/property_contexts b/common/private/property_contexts
+index 1c7a28a..6e95e76 100644
+--- a/common/private/property_contexts
++++ b/common/private/property_contexts
+@@ -4,6 +4,10 @@ vendor.camera.aux.packageblacklist     u:object_r:camera2_extensions_prop:s0
+ vendor.camera.aux.packageexcludelist   u:object_r:camera2_extensions_prop:s0
+ vendor.camera.aux.packagelist          u:object_r:camera2_extensions_prop:s0
+ 
++# NFC
++persist.vendor.nfc.config_file_name     u:object_r:vendor_persist_nfc_prop:s0 exact string
++persist.vendor.nfc.fw_file_name         u:object_r:vendor_persist_nfc_prop:s0 exact string
++
+ # Radio
+ ro.telephony.use_old_mnc_mcc_format    u:object_r:telephony_config_prop:s0
+ 
+diff --git a/common/public/property.te b/common/public/property.te
+new file mode 100644
+index 0000000..74e6a9b
+--- /dev/null
++++ b/common/public/property.te
+@@ -0,0 +1,2 @@
++# NFC
++system_vendor_config_prop(vendor_persist_nfc_prop)
+diff --git a/common/vendor/hal_nfc_default.te b/common/vendor/hal_nfc_default.te
+new file mode 100644
+index 0000000..91d4346
+--- /dev/null
++++ b/common/vendor/hal_nfc_default.te
+@@ -0,0 +1 @@
++get_prop(hal_nfc_default, vendor_persist_nfc_prop)
+diff --git a/common/vendor/vendor_init.te b/common/vendor/vendor_init.te
+index 194890c..174809b 100644
+--- a/common/vendor/vendor_init.te
++++ b/common/vendor/vendor_init.te
+@@ -1,3 +1,6 @@
++# NFC
++set_prop(vendor_init, vendor_persist_nfc_prop);
++
+ # To write to VM nodes
+ allow vendor_init proc_dirty:file w_file_perms;
+ 

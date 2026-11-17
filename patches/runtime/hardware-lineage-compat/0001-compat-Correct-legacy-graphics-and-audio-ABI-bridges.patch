@@ -1,0 +1,151 @@
+From 9bfcd51141b41e661de29cff4e1849a8279200df Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 12:35:13 +0000
+Subject: [PATCH] compat: Correct legacy graphics and audio ABI bridges
+
+Keep legacy exported symbols while forwarding the correct argument layouts.
+Pass an invalid owner UID to modern virtual-display creation and link the
+Android 17 AudioSystem implementation from libaudiobase.
+
+Validation: focused sources compiled; final audio link after the dependency
+correction and device validation remain pending under the build hold.
+
+Signed-off-by: fruitzail <mfm9875@gmail.com>
+---
+ Android.bp                       |  2 +-
+ libaudioclient/AudioSystem.cpp   | 10 +----
+ libgui/SurfaceComposerClient.cpp | 66 +++++++++++++++++++++-----------
+ 3 files changed, 46 insertions(+), 32 deletions(-)
+
+diff --git a/Android.bp b/Android.bp
+index 49b0ba2..6871134 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -280,7 +280,7 @@ cc_defaults {
+ 
+ cc_library_shared {
+     name: "libaudioclient_shim",
+-    shared_libs: ["libaudioclient", "libutils", "liblog"],
++    shared_libs: ["libaudiobase", "libaudioclient", "libutils", "liblog"],
+     header_libs: ["libmedia_headers"],
+     srcs: [
+         "libaudioclient/AudioSystem.cpp",
+diff --git a/libaudioclient/AudioSystem.cpp b/libaudioclient/AudioSystem.cpp
+index 358cb1d..7fec777 100644
+--- a/libaudioclient/AudioSystem.cpp
++++ b/libaudioclient/AudioSystem.cpp
+@@ -5,18 +5,12 @@
+ 
+ namespace android {
+ extern "C" {
+-status_t _ZN7android11AudioSystem24setDeviceConnectionStateE24audio_policy_dev_state_tRKNS_5media5audio6common9AudioPortE14audio_format_tb(
+-    audio_policy_dev_state_t state,
+-    const android::media::audio::common::AudioPort& port,
+-    audio_format_t encodedFormat, bool deviceSwitch);
+-
+ status_t _ZN7android11AudioSystem24setDeviceConnectionStateE24audio_policy_dev_state_tRKNS_5media5audio6common9AudioPortE14audio_format_t(
+     audio_policy_dev_state_t state,
+     const android::media::audio::common::AudioPort& port,
+-    audio_format_t encodedFormat, bool deviceSwitch
++    audio_format_t encodedFormat
+ ) {
+-    return _ZN7android11AudioSystem24setDeviceConnectionStateE24audio_policy_dev_state_tRKNS_5media5audio6common9AudioPortE14audio_format_tb(
+-        state, port, encodedFormat, deviceSwitch);
++    return AudioSystem::setDeviceConnectionState(state, port, encodedFormat, false);
+ }
+ }
+ }  // namespace android
+diff --git a/libgui/SurfaceComposerClient.cpp b/libgui/SurfaceComposerClient.cpp
+index 6930ed6..7aa275c 100644
+--- a/libgui/SurfaceComposerClient.cpp
++++ b/libgui/SurfaceComposerClient.cpp
+@@ -4,46 +4,66 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
++#include <gui/SurfaceComposerClient.h>
+ #include <utils/Errors.h>
+ 
++using android::IBinder;
++using android::sp;
++using android::String8;
++using android::SurfaceComposerClient;
+ using android::status_t;
+ 
+ extern "C" status_t _ZN7android21SurfaceComposerClient11Transaction5applyEbb(void* thisptr,
+                                                                              bool synchronous,
+                                                                              bool oneWay);
+ 
+-extern "C" void*
+-_ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbbS9_f(
+-        void* displayName, bool isSecure, bool optimizeForPower, void* uniqueId,
+-        float requestedRefreshRate);
+-
+-extern "C" void* _ZN7android21SurfaceComposerClient6kEmptyE;
+-
+-extern "C" void _ZN7android21SurfaceComposerClient21destroyVirtualDisplayERKNS_2spINS_7IBinderEEE(
+-        void* displayToken);
+-
+ extern "C" status_t _ZN7android21SurfaceComposerClient11Transaction5applyEb(void* thisptr,
+                                                                             bool synchronous) {
+     return _ZN7android21SurfaceComposerClient11Transaction5applyEbb(thisptr, synchronous, false);
+ }
+ 
+-extern "C" void* _ZN7android21SurfaceComposerClient13createDisplayERKNS_7String8Ebf(
+-        void* displayName, bool isSecure, float requestedRefreshRate) {
+-    return _ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbbS9_f(
+-            displayName, isSecure, true, _ZN7android21SurfaceComposerClient6kEmptyE,
+-            requestedRefreshRate);
++sp<IBinder> legacyCreateDisplay(const String8& displayName, bool isSecure,
++                               float requestedRefreshRate)
++        __asm__("_ZN7android21SurfaceComposerClient13createDisplayERKNS_7String8Ebf");
++
++sp<IBinder> legacyCreateDisplay(const String8& displayName, bool isSecure,
++                               float requestedRefreshRate) {
++    return SurfaceComposerClient::createVirtualDisplay(
++            std::string(displayName.c_str()), isSecure, true, SurfaceComposerClient::kEmpty,
++            android::gui::Uid::INVALID.val(), requestedRefreshRate);
++}
++
++void legacyDestroyDisplay(const sp<IBinder>& displayToken)
++        __asm__("_ZN7android21SurfaceComposerClient14destroyDisplayERKNS_2spINS_7IBinderEEE");
++
++void legacyDestroyDisplay(const sp<IBinder>& displayToken) {
++    SurfaceComposerClient::destroyVirtualDisplay(displayToken);
+ }
+ 
+-extern "C" void _ZN7android21SurfaceComposerClient14destroyDisplayERKNS_2spINS_7IBinderEEE(
+-        void* displayToken) {
+-    _ZN7android21SurfaceComposerClient21destroyVirtualDisplayERKNS_2spINS_7IBinderEEE(displayToken);
++sp<IBinder> legacyCreateVirtualDisplay(const std::string& displayName, bool isSecure,
++                                      const std::string& uniqueId, float requestedRefreshRate)
++        __asm__("_ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbS9_f");
++
++sp<IBinder> legacyCreateVirtualDisplay(const std::string& displayName, bool isSecure,
++                                      const std::string& uniqueId, float requestedRefreshRate) {
++    return SurfaceComposerClient::createVirtualDisplay(
++            displayName, isSecure, true, uniqueId, android::gui::Uid::INVALID.val(),
++            requestedRefreshRate);
+ }
+ 
+-extern "C" void*
+-_ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbS9_f(
+-        void* displayName, bool isSecure, void* uniqueId, float requestedRefreshRate) {
+-    return _ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbbS9_f(
+-            displayName, isSecure, true, uniqueId, requestedRefreshRate);
++sp<IBinder> legacyCreateVirtualDisplayWithPolicy(const std::string& displayName, bool isSecure,
++                                                bool optimizeForPower,
++                                                const std::string& uniqueId,
++                                                float requestedRefreshRate)
++        __asm__("_ZN7android21SurfaceComposerClient20createVirtualDisplayERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEbbS9_f");
++
++sp<IBinder> legacyCreateVirtualDisplayWithPolicy(const std::string& displayName, bool isSecure,
++                                                bool optimizeForPower,
++                                                const std::string& uniqueId,
++                                                float requestedRefreshRate) {
++    return SurfaceComposerClient::createVirtualDisplay(
++            displayName, isSecure, optimizeForPower, uniqueId, android::gui::Uid::INVALID.val(),
++            requestedRefreshRate);
+ }
+ 
+ extern "C" void* _ZTVN7android21SurfaceComposerClient11TransactionE = nullptr;

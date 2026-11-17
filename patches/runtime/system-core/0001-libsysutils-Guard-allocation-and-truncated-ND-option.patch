@@ -1,0 +1,37 @@
+From 6afec116812351ea4567e651759e365e103baa8d Mon Sep 17 00:00:00 2001
+From: fruitzail <mfm9875@gmail.com>
+Date: Tue, 17 Nov 2026 19:54:20 +0000
+Subject: [PATCH] libsysutils: Guard allocation and truncated ND options
+
+Reject failed NFLOG buffer allocation and incomplete IPv6 neighbor
+discovery option headers before accessing their contents.
+---
+ libsysutils/src/NetlinkEvent.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/libsysutils/src/NetlinkEvent.cpp b/libsysutils/src/NetlinkEvent.cpp
+index 47586db..20a7d0e 100644
+--- a/libsysutils/src/NetlinkEvent.cpp
++++ b/libsysutils/src/NetlinkEvent.cpp
+@@ -340,6 +340,10 @@ bool NetlinkEvent::parseNfPacketMessage(struct nlmsghdr *nh) {
+ 
+     size_t hexSize = 5 + (len * 2);
+     char* hex = (char*)calloc(1, hexSize);
++    if (hex == nullptr) {
++        SLOGE("Failed to allocate NFLOG packet buffer");
++        return false;
++    }
+     strlcpy(hex, "HEX=", hexSize);
+     for (int i = 0; i < len; i++) {
+         hex[4 + (i * 2)] = "0123456789abcdef"[(raw[i] >> 4) & 0xf];
+@@ -486,6 +490,10 @@ bool NetlinkEvent::parseNdUserOptMessage(const struct nlmsghdr *nh) {
+ 
+     // The kernel sends a separate netlink message for each ND option in the RA.
+     // So only parse the first ND option in the message.
++    if (len < static_cast<int>(sizeof(struct nd_opt_hdr))) {
++        SLOGE("Truncated ND option header: %d bytes\n", len);
++        return false;
++    }
+     struct nd_opt_hdr *opthdr = (struct nd_opt_hdr *) (msg + 1);
+ 
+     // The length is in multiples of 8 octets.

@@ -6,6 +6,11 @@ Verify before applying: `git apply --check <patch>`.
 
 Apply 04 before 05 (sizing assumes the classic icon layout).
 
+Runtime compatibility, policy, PowerHAL and netlink fixes against official sources
+are documented in [runtime/README.md](runtime/README.md). Apply those checked series
+after a fresh sync and before UI integration/building; existing matching trees are
+skipped. Their recorded baselines and patch checksums are in `runtime/series.json`.
+
 ---
 
 ## 04 — Classic (A14-style) status bar icons, consistently forced
