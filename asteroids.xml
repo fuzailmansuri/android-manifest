@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+
+    <remote name="fuzail"
+            fetch="https://github.com/fuzailmansuri/"
+            sync-c="true"
+            sync-tags="false" />
+
+    <remote name="fruitzail"
+            fetch="https://github.com/fruitzail/"
+            sync-c="true"
+            sync-tags="false" />
+
+    <remote name="crdroid"
+            fetch="https://github.com/crdroidandroid/"
+            sync-c="true"
+            sync-tags="false" />
+
+    <!-- Device Tree -->
+    <project name="android_device_nothing_asteroids"
+             path="device/nothing/asteroids"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Proprietary Vendor -->
+    <project name="proprietary_vendor_nothing_asteroids"
+             path="vendor/nothing/asteroids"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Kernel Source -->
+    <project name="android_kernel_nothing_sm7635"
+             path="kernel/nothing/sm7635"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Kernel Modules -->
+    <project name="android_kernel_nothing_sm7635-modules"
+             path="kernel/nothing/sm7635-modules"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Kernel Device Trees -->
+    <project name="android_kernel_nothing_sm7635-devicetrees"
+             path="kernel/nothing/sm7635-devicetrees"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Hardware Features -->
+    <project name="android_hardware_nothing" 
+             path="hardware/nothing" 
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <project name="hardware_dolby"
+             path="hardware/dolby"
+             remote="fuzail"
+             revision="seventeen-6.1" />
+
+    <!-- Nothing / Glyph Apps -->
+    <project name="packages_apps_ParanoidGlyph"
+             path="packages/apps/ParanoidGlyph"
+             remote="fuzail"
+             revision="seventeen" />
+
+    <project name="packages_apps_GlyphAdapter"
+             path="packages/apps/GlyphAdapter"
+             remote="fuzail"
+             revision="seventeen" />
+
+    <!-- Nothing Camera -->
+    <project name="NT-cam"
+             path="vendor/nothing/camera"
+             remote="fruitzail"
+             revision="be96638ebb54332d3ca78fe3317f246402927832" />
+
+    <!-- Dolby Atmos Apps & Resources -->
+    <project name="android_packages_apps_LunarisDolby"
+             path="packages/apps/LunarisDolby"
+             remote="crdroid"
+             revision="17.0" />
+
+    <project name="android_packages_resources_apps"
+             path="packages/resources/apps"
+             remote="crdroid"
+             revision="16.0" />
+
+    <!-- Voltage-Priv / Signing -->
+    <remove-project name="vendor_voltage-priv_keys" optional="true" />
+    <project name="vendor_voltage-priv"
+             path="vendor/voltage-priv"
+             remote="fuzail"
+             revision="seventeen" />
+
+</manifest>
